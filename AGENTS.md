@@ -43,3 +43,12 @@ tkinter アプリ。任意画像にファインダー風オーバーレイ（四
 - プレビューは `thumbnail()` で `canvas_label` 域に収め、`<Configure>` を 150ms デバウンス。`self.photo` の参照保持がないと GC で画像が消える。日時手入力欄の再描画・保存は 300ms デバウンス。
 - フォントは `C:/Windows/Fonts` 優先、DejaVu フォールバック、最終手段 `load_default()`。`color` 切替は枠・電池・REC 文字・十字・日時のみ対象。赤丸は常に赤。フォントはリポジトリ・exe ともに非同梱（README に明記）。
 - `rec-frame-app.spec` は `console=True` を維持すること。GUI と CLI `--batch` を 1 本の exe で兼ねるため `windowed=True` 化は禁止。
+
+## git運用（初心者ユーザーの安全策）
+
+- commit・push・タグ付け・PR作成はユーザーの明示指示があるまで行わない。`git add` の前に必ず `git status --short` を確認する。
+- 開発途中の中間生成物を深く考えず上げようとしていたら、実行前に警告して立ち止まること。特に以下は公開禁止（`.gitignore` 済みのはずだが毎回 `git ls-files` で混入確認）：
+  - `ui_prototypes/`（試作・大量スクショ・`handoff/*.bundle` 等の履歴塊）
+  - `docs/ui-redesign/`（検証メモ・測定JSON・撮影画像）
+  - `build/ dist/ .venv/ test_picture_*`、`#*` の作業メモ、`*.env / *.pem / *.key`、LLM作業メモ類
+- push前の確認：絶対パス（`C:\Users\...`）・私用メール・トークン類が `git grep` で出ないこと。作者情報は `treeturtlefall-arch@users.noreply.github.com` を使用し、私用メールを履歴に入れない。
