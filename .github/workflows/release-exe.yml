@@ -1,0 +1,51 @@
+name: release-exe
+
+# PyInstaller 単体exeのビルド・配布用 (SPEC §9)。
+# - `v*` タグ push で自動ビルド→ GitHub Release に `rec-frame-app.exe` を添付
+# - 手動実行 (workflow_dispatch) ではビルド＋ smoke のみで Release は作らない
+# - ローカル再現: .venv\Scripts\pyinstaller rec-frame-app.spec --clean --noconfirm
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Build exe with PyInstaller
+        run: pyinstaller rec-frame-app.spec --clean --noconfirm
+      - name: Smoke test exe (CLI --help + --batch)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          chcp 65001 | Out-Null
+          .\dist\rec-frame-app.exe --help
+          New-Item -ItemType Directory -Path smoke_in -Force | Out-Null
+          # Pillow で 1 枚だけテスト画像を作り、exe の --batch 経路を通す
+          python -c "from PIL import Image; Image.new('RGB', (64, 48), (200, 30, 30)).save('smoke_in/a.png')"
+          .\dist\rec-frame-app.exe --batch smoke_in smoke_out
+          Get-ChildItem smoke_out
+          if (-not (Test-Path smoke_out/a_rec.png)) { throw "smoke_out/a_rec.png がありません" }
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rec-frame-app-windows
+          path: dist/rec-frame-app.exe
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/rec-frame-app.exe
+          generate_release_notes: true

@@ -1,0 +1,14 @@
+[project]
+name = "rec-frame-app"
+version = "0.2.0"
+description = "Camera viewfinder style overlay (corner brackets + battery + red REC dot) composited at relative scale"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = ["Pillow==12.1.0"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

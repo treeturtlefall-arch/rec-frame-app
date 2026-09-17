@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rec-frame-app — ファインダー風オーバーレイ合成 / Viewfinder overlay compositor</title>
+<meta name="description" content="任意の画像にファインダー風オーバーレイ（四隅枠・電池・赤丸REC・中央十字・日時・劣化エフェクト）をベクター生成で合成。Camera viewfinder overlay baked into any image at relative scale.">
+<style>
+:root{--bg:#0b0d0f;--panel:#101418;--ink:#e8ecef;--dim:#9aa7b0;--line:#2a3238;--rec:#e33;--mono:ui-monospace,"Cascadia Mono","Courier New",monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 "Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,system-ui,sans-serif}
+a{color:#7fd0c8}a:focus-visible,:focus-visible{outline:2px solid #7fd0c8;outline-offset:2px}
+.en{display:block;color:var(--dim);font-size:.85em;font-weight:400;line-height:1.6}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}
+header.vf{border-bottom:1px solid var(--line);background:#000}
+.vf-bar{display:flex;align-items:center;gap:12px;max-width:980px;margin:0 auto;padding:12px 20px;font-family:var(--mono)}
+.rec{display:inline-flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.08em}
+.rec i{width:14px;height:14px;border-radius:50%;background:var(--rec);display:inline-block;animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.stamp{margin-left:auto;color:var(--dim)}
+.hero{padding:48px 0 24px;text-align:left}
+.hero h1{font-size:clamp(26px,4vw,40px);margin:.2em 0}
+.hero p{max-width:60em}
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+.btn{display:inline-block;padding:10px 18px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;background:var(--panel)}
+.btn.primary{background:#0d5c55;border-color:#0d5c55;color:#fff}
+section{padding:28px 0;border-top:1px solid var(--line)}
+h2{font-size:clamp(20px,3vw,28px)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+figure img{display:block;width:100%;height:auto;aspect-ratio:auto;object-fit:cover;background:#000}
+figcaption{padding:10px 12px;font-size:14px;color:var(--ink)}
+figcaption small{display:block;color:var(--dim)}
+.fxhead{padding:10px 12px 0;font-size:14px;font-weight:700}
+.fxhead small{display:block;color:var(--dim);font-weight:400}
+.shot img{aspect-ratio:116/70;object-fit:cover}
+code,pre{font-family:var(--mono);font-size:.9em}
+pre{background:#000;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto}
+ul{padding-left:1.2em}li{margin:.3em 0}
+footer{border-top:1px solid var(--line);padding:24px 0;color:var(--dim);font-size:14px}
+@media(prefers-reduced-motion:reduce){.rec i{animation:none}}
+</style>
+</head>
+<body>
+<header class="vf" aria-label="recording banner">
+<div class="vf-bar"><span class="rec"><i aria-hidden="true"></i>REC</span><span>REC FRAME</span><span class="stamp">2026/09/18 PM 08:30</span></div>
+</header>
+<main class="wrap">
+<div class="hero">
+<h1>rec-frame-app <span class="en">Camera viewfinder overlay compositor</span></h1>
+<p>任意の画像にカメラのファインダー風オーバーレイ（四隅枠＋電池＋赤丸REC＋中央十字＋日時＋劣化エフェクト）を合成するGUIアプリ。透過PNGの拡大縮小ではなく画像サイズからの相対値でベクター生成するため、どんな解像度でも比率が崩れません。<span class="en">Bake a camera viewfinder overlay — corner brackets, battery, red REC dot, crosshair, timestamp, degradation effects — into any image. Vector-generated at relative scale, so any resolution keeps proportions.</span></p>
+<div class="btns">
+<a class="btn primary" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases">Releasesでexeを入手<span class="en">Get rec-frame-app.exe</span></a>
+<a class="btn" href="https://github.com/treeturtlefall-arch/rec-frame-app">GitHub<span class="en">Source &amp; docs</span></a>
+<a class="btn" href="../USECASES.md">ユースケース集<span class="en">Use cases</span></a>
+</div>
+</div>
+<section aria-labelledby="ex">
+<h2 id="ex">作例 / Examples</h2>
+<p>加工前後の比較ではなく、設定の違いの紹介です。<span class="en">Same overlay engine, different settings — not before/after.</span></p>
+<div class="grid">
+<figure><img src="../../assets/examples/dog_clean.jpg" alt="犬の写真に黒・中・OFF（簡易）のオーバーレイ" loading="lazy"><figcaption>黒・中・OFF（簡易）<small>Black / medium / clean</small></figcaption></figure>
+<figure><img src="../../assets/examples/dog_oled.jpg" alt="犬の写真に白・大・OLED＋十字＋日時（詳細）のオーバーレイ" loading="lazy"><figcaption>白・大・OLED＋十字＋日時（詳細）<small>White / large / OLED + crosshair + timestamp</small></figcaption></figure>
+<figure><img src="../../assets/examples/anime_clean.jpg" alt="アニメ絵に黒・中・OFF（簡易）のオーバーレイ" loading="lazy"><figcaption>黒・中・OFF（簡易）<small>Black / medium / clean</small></figcaption></figure>
+<figure><img src="../../assets/examples/anime_2000s.jpg" alt="アニメ絵に白・中・2000s＋十字＋日時（詳細）のオーバーレイ" loading="lazy"><figcaption>白・中・2000s＋十字＋日時（詳細）<small>White / medium / 2000s + crosshair + timestamp</small></figcaption></figure>
+</div>
+</section>
+<section aria-labelledby="feat">
+<h2 id="feat">機能 / Features</h2>
+<ul>
+<li>四隅枠・電池・REC・中央十字・日時（<code>YYYY/MM/DD AM/PM HH:MM</code>）の個別ON/OFF<span class="en">Per-element toggles</span></li>
+<li>枠色・枠太さ（小/中/大）・フォント・エフェクト（OFF / OLED / 2000s）<span class="en">Color, bracket weight, fonts, effects</span></li>
+<li>撮影日時モード（EXIF優先→更新時刻→固定文）<span class="en">Photo timestamp: EXIF, else mtime, else fixed text</span></li>
+<li>フォルダ一括処理（GUI＋CLI <code>--batch</code>）<span class="en">Batch a folder from GUI or CLI</span></li>
+<li>日英即時切替・設定の自動記憶<span class="en">Instant JA/EN switch, settings auto-saved</span></li>
+</ul>
+</section>
+<section aria-labelledby="fx">
+<h2 id="fx">エフェクト / Effects</h2>
+<p>エフェクトはオーバーレイ層にだけかかり、元の写真は一切変えません。CRT/VHSのような画面全体への破壊処理はコンセプトに合わないため不採用です。<span class="en">Effects touch only the overlay layer — your photo stays intact. No destructive CRT/VHS filters by design.</span></p>
+<div class="grid">
+<figure><div class="fxhead">OLED（微発光）<small>Weak bloom only — subtle glow like an OLED display</small></div><figcaption>枠や文字の背後にぼかし複製を敷く微発光。光の強さは枠色で調整されます（白がやや強め）。狙いは現代の監視カメラ・配信画面の質感。実況スクショ・フォトブース・旅行ログにおすすめ。作例は上の犬の写真2枚目です。<small>Best for: game clips, photo booths, travel logs. See the 2nd dog example above.</small></figcaption></figure>
+<figure><div class="fxhead">2000sデジカメ<small>Weak RGB shift + low-res — Y2K digicam grit</small></div><figcaption>色ずれ（弱）と低解像度化（0.5倍→等倍復元）のジャギで、平成デジカメ・防犯カメラ映像の粗さを再現。狙いは「撮られている感」の増幅。サムネ・心霊ネタ・TRPG証拠品・エモ投稿におすすめ。作例は上のアニメ絵2枚目です。<small>Best for: thumbnails, spooky posts, TRPG handouts, Y2K edits. See the 2nd anime example above.</small></figcaption></figure>
+</div>
+</section>
+<section aria-labelledby="ui">
+<h2 id="ui">アプリ画面 / App UI</h2>
+<div class="grid shot">
+<figure><a href="../../assets/examples/dog_clean.jpg"><img src="../../assets/examples/dog_clean.jpg" alt="作例:簡易モード相当の出力" loading="lazy"></a><figcaption>簡易モードの作例<span class="en">Simple style example (click for full size)</span></figcaption></figure>
+<figure><a href="../../assets/examples/anime_2000s.jpg"><img src="../../assets/examples/anime_2000s.jpg" alt="作例:詳細+エフェクトの出力" loading="lazy"></a><figcaption>詳細+エフェクトの作例<span class="en">Detail + effects example (click for full size)</span></figcaption></figure>
+</div>
+</section>
+<section aria-labelledby="use">
+<h2 id="use">使い方 / Usage</h2>
+<pre><code>.venv\Scripts\python rec_frame_app.py
+rem CLI batch (--config omitted = remembered settings)
+.venv\Scripts\python rec_frame_app.py --batch 入力フォルダ 出力フォルダ --config rec_frame_config.json
+rem English CLI
+.venv\Scripts\python rec_frame_app.py --lang en --batch input output</code></pre>
+<p>入力: PNG / JPG / JPEG / WebP / BMP（EXIF Orientation正規化）・出力: PNG / JPEG（quality=95）/ WebP。保存名は <code>{元名}_rec{拡張子}</code>。<span class="en">Input PNG/JPG/JPEG/WebP/BMP, output PNG/JPEG q95/WebP, saved as {name}_rec{ext}.</span></p>
+</section>
+<section aria-labelledby="dl">
+<h2 id="dl">配布 / Download</h2>
+<p>一般ユーザーはGitHub Releasesの <code>rec-frame-app.exe</code> をDLしてダブルクリック（Python不要、約17MB）。初回は署名なしのためSmartScreenが出ます（詳細情報→実行）。<span class="en">Windows users: download rec-frame-app.exe from Releases, double-click (no Python needed). Unsigned, so SmartScreen appears on first run.</span></p>
+</section>
+</main>
+<footer><div class="wrap">MIT License — <a href="https://github.com/treeturtlefall-arch/rec-frame-app">treeturtlefall-arch/rec-frame-app</a></div></footer>
+</body>
+</html>

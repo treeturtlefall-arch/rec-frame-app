@@ -1,0 +1,33 @@
+__pycache__/
+*.py[cod]
+.venv/
+output/
+temp/
+*.lnk
+# PyInstaller 成果物 (spec 自体は配布のためコミットする)
+build/
+dist/
+smoke_in/
+smoke_out/
+.pytest_cache/
+# LLM作業メモ (ローカル保持・リポジトリには上げない)
+implementation_plan.md
+walkthrough.md
+\#*
+# 作例の元画像 (ローカル保持・出力は assets/examples/ にコミット)
+test_picture_*
+# ローカル専用の退避・環境記録（実ファイルは手元に保持）
+ui_prototypes/proposal-b/handoff/
+ui_prototypes/proposal-b/baseline.json
+ui_prototypes/proposal-b/brushup_baseline.json
+ui_prototypes/proposal-b/start_status.txt
+# 公開しない開発メモ (ローカル保持・公開ツリーには戻さない)
+ui_prototypes/
+docs/ui-redesign/
+docs/GIT_WORKFLOW.md
+docs/トラブルシューティング.md
+# 秘密情報の混入防止
+*.env
+.env*
+*.pem
+*.key
