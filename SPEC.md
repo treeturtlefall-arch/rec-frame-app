@@ -137,7 +137,7 @@
 ## 9. OSS公開に向けたロードマップ
 
 - [x] 単体リポジトリ化（済：リポジトリ直下の `rec_frame_app.py` に移行）
-- [x] `README.md`（英日、スクショ・使い方・対応形式。`assets/sample_rec.png` 付き）
+- [x] `README.md`（英日、スクショ・使い方・対応形式。`docs/assets/sample_rec.png` 付き）
 - [x] `LICENSE`（MIT。フォント非同梱の旨はREADMEに明記）
 - [x] `requirements.txt` / `pyproject.toml`（Pillowのみ）
 - [x] テスト整備（pytest: 等距離・同寸出力・全フォント描画・設定記憶・バッチ・カスタムフォント・撮影日時・GUI/バッチ描画一致・本番UI状態遷移・日英切替・`test_dist.py`・`conftest.py` 共通ヘルパーの自動化。計220件。画面のない環境でのスキップは§6参照）

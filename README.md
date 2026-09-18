@@ -8,10 +8,10 @@ Camera viewfinder style overlay (corner brackets + battery + red REC dot) compos
 
 ## 作例 / Examples
 
-| ![dog clean](assets/examples/dog_clean.jpg) | ![dog OLED](assets/examples/dog_oled.jpg) |
+| ![dog clean](docs/assets/examples/dog_clean.jpg) | ![dog OLED](docs/assets/examples/dog_oled.jpg) |
 |---|---|
 | 黒・中・OFF（簡易） | 白・大・OLED＋十字＋日時（詳細） |
-| ![anime clean](assets/examples/anime_clean.jpg) | ![anime 2000s](assets/examples/anime_2000s.jpg) |
+| ![anime clean](docs/assets/examples/anime_clean.jpg) | ![anime 2000s](docs/assets/examples/anime_2000s.jpg) |
 | 黒・中・OFF（簡易） | 白・中・2000s＋十字＋日時（詳細） |
 
 ## 使い方 / Usage

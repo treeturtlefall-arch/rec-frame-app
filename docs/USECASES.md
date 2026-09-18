@@ -4,7 +4,7 @@
 「撮られている感」「記録されている感」を足すためのアイデア集。
 設定名はGUIの表示名そのまま。日時は `YYYY/MM/DD AM/PM HH:MM` 形式。
 
-> 英語の概要は各節の末尾1行。作例画像は `assets/examples/` に追加予定。
+> 英語の概要は各節の末尾1行。作例画像は `docs/assets/examples/` に追加予定。
 
 ## 1. 動画・配信系 / Thumbnails & Streams
 

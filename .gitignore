@@ -14,7 +14,7 @@ smoke_out/
 implementation_plan.md
 walkthrough.md
 \#*
-# 作例の元画像 (ローカル保持・出力は assets/examples/ にコミット)
+# 作例の元画像 (ローカル保持・出力は docs/assets/examples/ にコミット)
 test_picture_*
 # ローカル専用の退避・環境記録（実ファイルは手元に保持）
 ui_prototypes/proposal-b/handoff/
