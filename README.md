@@ -4,6 +4,8 @@
 
 Camera viewfinder style overlay (corner brackets + battery + red REC dot) composited at relative scale, so any resolution keeps proportions.
 
+紹介ページ: https://treeturtlefall-arch.github.io/rec-frame-app/landing/
+
 ## 作例 / Examples
 
 | ![dog clean](assets/examples/dog_clean.jpg) | ![dog OLED](assets/examples/dog_oled.jpg) |
