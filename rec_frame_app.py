@@ -24,15 +24,19 @@ from tkinter import font as tkfont
 
 from PIL import Image, ImageDraw, ImageTk
 
+from rec_cli import (
+    _preferred_cli_language,  # 後方互換のための再エクスポート
+    configure_console,
+    parse_cli_args,
+    run_batch_cli,  # 後方互換のための再エクスポート
+)
 from rec_config import (
     CUSTOM_FONT_EXTENSIONS,
     DEFAULT_EFFECT,
     DEFAULT_FONT,
-    DEFAULT_THICKNESS,
     EFFECT_CHOICES,
     FONT_CHOICES,
     SUPPORTED_EXTENSIONS,
-    THICKNESS_CHOICES,
     OverlayConfig,
     compose_timecode_text,
     get_font_browse_start_dir,
@@ -59,7 +63,6 @@ from rec_i18n import (
     builtin_font_label,
     effect_label,
     normalize_language,
-    thickness_label,
     tr,
 )
 
@@ -260,9 +263,6 @@ class App(tk.Tk):
                     tk.BooleanVar(self, getattr(loaded, name)))
         self.use_exif_var = tk.BooleanVar(self, loaded.timecode_from_exif)
         self._effect_label_to_key = dict(EFFECT_CHOICES)
-        self._thickness_label_to_key = dict(THICKNESS_CHOICES)
-        self._thickness_key_to_label = {
-            key: label for label, key in THICKNESS_CHOICES.items()}
         self.language_display_var = tk.StringVar(
             self, LANGUAGE_NAMES[self.language_var.get()])
         self.font_display_var = tk.StringVar(self)
@@ -529,16 +529,6 @@ class App(tk.Tk):
                 column=(index % 2 if two_columns else 0),
                 padx=((0, 22) if two_columns and index % 2 == 0 else 0))
 
-    def _build_toolbar(self):
-        btn_frame = tk.Frame(self)
-        btn_frame.pack(pady=8)
-        tk.Button(btn_frame, text="画像を開く", width=14,
-                  command=self.open_image).pack(side=tk.LEFT, padx=6)
-        tk.Button(btn_frame, text="保存", width=14,
-                  command=self.save_image).pack(side=tk.LEFT, padx=6)
-        tk.Button(btn_frame, text="一括処理...", width=14,
-                  command=self.batch_images).pack(side=tk.LEFT, padx=6)
-
     def _font_choice_values(self) -> list[str]:
         values = list(FONT_CHOICES)
         for name in self.custom_fonts:
@@ -628,50 +618,19 @@ class App(tk.Tk):
         self.style_page._size()
         self.detail_page._size()
 
-    def _build_color_font_bar(self, loaded: OverlayConfig):
-        color_frame = tk.Frame(self)
-        color_frame.pack(pady=2)
-        tk.Label(color_frame, text="枠の色:").pack(side=tk.LEFT)
-        self.color_var = tk.StringVar(value=loaded.color)
-        tk.Radiobutton(color_frame, text="黒", value="black",
-                       variable=self.color_var,
-                       command=self._refresh).pack(side=tk.LEFT, padx=4)
-        tk.Radiobutton(color_frame, text="白", value="white",
-                       variable=self.color_var,
-                       command=self._refresh).pack(side=tk.LEFT, padx=4)
-        tk.Label(color_frame, text="  RECフォント:").pack(side=tk.LEFT)
-        initial_font = (loaded.font_key if loaded.font_key in self._font_choice_values()
-                        else DEFAULT_FONT)
-        self.font_var = tk.StringVar(value=initial_font)
-        self.font_box = ttk.Combobox(color_frame, textvariable=self.font_var,
-                                     values=self._font_choice_values(),
-                                     width=26, state="readonly")
-        self.font_box.pack(side=tk.LEFT)
-        self.font_box.bind("<<ComboboxSelected>>", lambda _: self._refresh())
-        tk.Button(color_frame, text="追加...",
-                  command=self._on_add_custom_font).pack(side=tk.LEFT, padx=4)
-        tk.Button(color_frame, text="削除",
-                  command=self._on_remove_custom_font).pack(side=tk.LEFT)
-
     def _refresh_font_choices(self) -> None:
-        if hasattr(self, "font_display_var"):
-            pairs = self._font_display_pairs()
-            self._font_display_to_key = dict(pairs)
-            self._font_key_to_display = {key: display for display, key in pairs}
-            values = [display for display, _key in pairs]
-            self.font_box.config(values=values)
-            key = self.font_var.get()
-            if key not in self._font_key_to_display:
-                key = DEFAULT_FONT
-                self.font_var.set(key)
-            self.font_display_var.set(self._font_key_to_display[key])
-            self.font_box.unbind("<<ComboboxSelected>>")
-            self.font_box.bind("<<ComboboxSelected>>", self._on_font_selected)
-            return
-        values = self._font_choice_values()
+        pairs = self._font_display_pairs()
+        self._font_display_to_key = dict(pairs)
+        self._font_key_to_display = {key: display for display, key in pairs}
+        values = [display for display, _key in pairs]
         self.font_box.config(values=values)
-        if self.font_var.get() not in values:
-            self.font_var.set(DEFAULT_FONT)
+        key = self.font_var.get()
+        if key not in self._font_key_to_display:
+            key = DEFAULT_FONT
+            self.font_var.set(key)
+        self.font_display_var.set(self._font_key_to_display[key])
+        self.font_box.unbind("<<ComboboxSelected>>")
+        self.font_box.bind("<<ComboboxSelected>>", self._on_font_selected)
 
     def _on_add_custom_font(self):
         """所持フォント (.ttf/.otf/.ttc) を fonts/ へ複写して登録する。"""
@@ -755,152 +714,11 @@ class App(tk.Tk):
         self._refresh_font_choices()
         self._refresh()
 
-    def _build_thickness_bar(self, loaded: OverlayConfig):
-        thick_frame = tk.Frame(self)
-        thick_frame.pack(pady=2)
-        tk.Label(thick_frame, text="枠の太さ:").pack(side=tk.LEFT)
-        self.thickness_var = tk.StringVar(value=loaded.thickness)
-        self._thickness_label_to_key = dict(THICKNESS_CHOICES)
-        self._thickness_key_to_label = {v: k for k, v in THICKNESS_CHOICES.items()}
-        for label in THICKNESS_CHOICES.keys():
-            tk.Radiobutton(thick_frame, text=label,
-                           value=THICKNESS_CHOICES[label],
-                           variable=self.thickness_var,
-                           command=self._refresh).pack(side=tk.LEFT, padx=4)
-
-    def _build_effect_bar(self, loaded: OverlayConfig):
-        # UI劣化エフェクト (SPEC §3.6)。枠太さと同様に両モード共通で常時有効。
-        effect_frame = tk.Frame(self)
-        effect_frame.pack(pady=2)
-        tk.Label(effect_frame, text="エフェクト:").pack(side=tk.LEFT)
-        self._effect_label_to_key = dict(EFFECT_CHOICES)
-        default_effect_label = next(
-            (k for k, v in EFFECT_CHOICES.items() if v == loaded.effect),
-            next(
-                (k for k, v in EFFECT_CHOICES.items() if v == DEFAULT_EFFECT),
-                next(iter(EFFECT_CHOICES))))
-        self.effect_var = tk.StringVar(value=default_effect_label)
-        tk.OptionMenu(effect_frame, self.effect_var, *EFFECT_CHOICES.keys(),
-                      command=lambda _: self._refresh()).pack(side=tk.LEFT)
-
-    def _build_mode_bar(self, loaded: OverlayConfig):
-        mode_frame = tk.Frame(self)
-        mode_frame.pack(pady=2)
-        tk.Label(mode_frame, text="モード:").pack(side=tk.LEFT)
-        self.mode_var = tk.StringVar(
-            value="simple" if is_simple_equivalent(loaded) else "detail")
-        tk.Radiobutton(mode_frame, text="簡易", value="simple",
-                       variable=self.mode_var,
-                       command=self._on_mode_change).pack(side=tk.LEFT, padx=4)
-        tk.Radiobutton(mode_frame, text="詳細", value="detail",
-                       variable=self.mode_var,
-                       command=self._on_mode_change).pack(side=tk.LEFT, padx=4)
-
-    def _build_detail_checks(self, loaded: OverlayConfig):
-        # 詳細チェックは常時表示し、簡易モードでは無効化 (disabled)。枠太さラジオは両モード共通で常時有効 (SPEC §10.2)。
-        # 中央十字・日時は詳細限定・既定OFF。簡易モードでは非表示扱い。
-        self.show_frame_var = tk.BooleanVar(value=loaded.show_frame)
-        self.show_battery_var = tk.BooleanVar(value=loaded.show_battery)
-        self.show_rec_var = tk.BooleanVar(value=loaded.show_rec)
-        self.show_cross_var = tk.BooleanVar(value=loaded.show_cross)
-        self.detail_frame = tk.Frame(self)
-        self.detail_frame.pack(pady=2)
-        self._detail_checks = []
-        for text, var in (("枠フレーム", self.show_frame_var),
-                          ("電池残量マーク", self.show_battery_var),
-                          ("REC", self.show_rec_var),
-                          ("中央十字", self.show_cross_var)):
-            cb = tk.Checkbutton(self.detail_frame, text=text,
-                                variable=var, state=tk.DISABLED,
-                                command=self._refresh)
-            cb.pack(side=tk.LEFT, padx=4)
-            self._detail_checks.append(cb)
-
-    def _build_timecode_bar(self, loaded: OverlayConfig):
-        # 日時表示 (SPEC §3.5): 詳細限定のON/OFF＋手入力欄＋撮影日時モード。簡易モードでは無効化。
-        self.show_timecode_var = tk.BooleanVar(value=loaded.show_timecode)
-        self.use_exif_var = tk.BooleanVar(value=loaded.timecode_from_exif)
-        self.timecode_text_var = tk.StringVar(
-            value=loaded.timecode_text or default_timecode_text())
-        self.timecode_frame = tk.Frame(self)
-        self.timecode_frame.pack(pady=2)
-        self.timecode_check = tk.Checkbutton(
-            self.timecode_frame, text="日時表示",
-            variable=self.show_timecode_var, state=tk.DISABLED,
-            command=self._refresh)
-        self.timecode_check.pack(side=tk.LEFT, padx=4)
-        self.timecode_entry = tk.Entry(
-            self.timecode_frame, textvariable=self.timecode_text_var,
-            width=22, state=tk.DISABLED)
-        self.timecode_entry.pack(side=tk.LEFT, padx=4)
-        self.exif_check = tk.Checkbutton(
-            self.timecode_frame, text="撮影日時を使う",
-            variable=self.use_exif_var, state=tk.DISABLED,
-            command=self._on_exif_toggle)
-        self.exif_check.pack(side=tk.LEFT, padx=4)
-        self._detail_checks.append(self.timecode_check)
-        self._detail_checks.append(self.exif_check)
-        self.timecode_text_var.trace_add("write", self._on_timecode_edit)
-
     def _on_exif_toggle(self):
         """撮影日時モードON時は日時表示もONにして即時反映する (片方向アシスト)。"""
         if self.use_exif_var.get() and not self.show_timecode_var.get():
             self.show_timecode_var.set(True)
         self._refresh()
-
-    def _build_timecode_selector(self, loaded: OverlayConfig):
-        # 日時選択式入力 (SPEC §10.3): Spinbox群→同一 timecode_text に合成(片方向)。
-        # 検証は緩和し暦チェックなし。手入力欄も残し、直接編集も可(セレクタ操作で上書き)。
-        now = datetime.now()
-        self.timecode_sel_frame = tk.Frame(self)
-        self.timecode_sel_frame.pack(pady=1)
-        tk.Label(self.timecode_sel_frame, text="選択入力:").pack(side=tk.LEFT)
-        self._timecode_sel_widgets: list = []
-
-        def _spin(from_, to, width, value, wrap=True, fmt=None):
-            sb = tk.Spinbox(self.timecode_sel_frame, from_=from_, to=to,
-                            width=width, wrap=wrap, state=tk.DISABLED,
-                            command=self._on_timecode_select,
-                            **({"format": fmt} if fmt else {}))
-            sb.delete(0, tk.END)
-            sb.insert(0, str(value))
-            sb.bind("<FocusOut>", self._on_timecode_select)
-            sb.bind("<Return>", self._on_timecode_select)
-            sb.pack(side=tk.LEFT, padx=1)
-            self._timecode_sel_widgets.append(sb)
-            return sb
-
-        def _dropdown(label, values, value, width=4):
-            tk.Label(self.timecode_sel_frame, text=label).pack(side=tk.LEFT)
-            cb = ttk.Combobox(self.timecode_sel_frame, values=values,
-                              width=width, state=tk.DISABLED)
-            cb.set(value)
-            cb.bind("<<ComboboxSelected>>", self._on_timecode_select)
-            cb.pack(side=tk.LEFT, padx=1)
-            self._timecode_sel_widgets.append(cb)
-            return cb
-
-        def _padded(from_, to):
-            return [f"{i:02d}" for i in range(from_, to + 1)]
-
-        tk.Label(self.timecode_sel_frame, text="年").pack(side=tk.LEFT)
-        self.tc_year_spin = _spin(1, 9999, 5, now.year, wrap=False)
-        self.tc_month_box = _dropdown("月", _padded(1, 12), f"{now.month:02d}")
-        self.tc_day_box = _dropdown("日", _padded(1, 31), f"{now.day:02d}")
-        self.tc_ampm_box = _dropdown("", ["AM", "PM"],
-                                     "AM" if now.hour < 12 else "PM", width=4)
-        h12 = now.hour % 12 or 12
-        self.tc_hour_box = _dropdown("時", _padded(1, 12), f"{h12:02d}")
-        self.tc_min_box = _dropdown("分", _padded(0, 59), f"{now.minute:02d}")
-        self._sync_timecode_selector(loaded.timecode_text)
-
-    def _build_preview_area(self):
-        self.info = tk.Label(self, text="画像を開いてください (どんなサイズでもOK)",
-                             fg="gray")
-        self.info.pack()
-
-        self.canvas_label = tk.Label(self, bg="#cccccc")
-        self.canvas_label.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
 
     def _on_timecode_edit(self, *args):
         """日時手入力欄の変更時ハンドラ。300msデバウンスで再描画・保存を実行。"""
@@ -1209,92 +1027,15 @@ class App(tk.Tk):
             self._tr("dialog.batch.result_title"), "\n".join(lines), parent=self)
 
 
-def run_batch_cli(
-    input_dir: str,
-    output_dir: str,
-    config_path: str | None = None,
-    language: str | None = None,
-) -> int:
-    """CLI `--batch` の実体。GUIを開かずフォルダ一括処理する。"""
-    import json
-    from pathlib import Path
-
-    from rec_batch import process_folder
-
-    if config_path:
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            config = OverlayConfig.from_dict(data if isinstance(data, dict) else {})
-        except (OSError, ValueError) as e:
-            lang = normalize_language(language)
-            print(tr(lang, "cli.config_read_error", error=e))
-            return 2
-    else:
-        config = load_user_config()
-    lang = normalize_language(language or config.ui_language)
-    result = process_folder(Path(input_dir), Path(output_dir), config,
-                            progress=lambda i, total, name: print(
-                                tr(lang, "batch.progress", index=i, total=total, name=name)
-                                if name else tr(lang, "batch.progress_done", total=total)),
-                            language=lang)
-    print(tr(lang, "cli.result", success=result.success,
-             failed=result.failed, skipped=result.skipped))
-    for err in result.errors:
-        print(tr(lang, "cli.error", error=err))
-    if result.failed > 0 or (result.success == 0 and result.errors):
-        return 1
+def main(argv: list[str] | None = None) -> int:
+    """起動引数に応じてCLIまたはGUIへ処理を渡す。"""
+    args = parse_cli_args(argv)
+    if args.batch:
+        return run_batch_cli(args.batch[0], args.batch[1], args.config, args.lang)
+    App(language_override=args.lang).mainloop()
     return 0
 
 
-def _preferred_cli_language(argv: list[str]) -> str:
-    """argparse生成前にhelp表示言語を決める。"""
-    import json
-
-    if "--lang" in argv:
-        try:
-            return normalize_language(argv[argv.index("--lang") + 1])
-        except IndexError:
-            pass
-    if "--config" in argv:
-        try:
-            path = argv[argv.index("--config") + 1]
-            with open(path, "r", encoding="utf-8") as file:
-                data = json.load(file)
-            if isinstance(data, dict):
-                return OverlayConfig.from_dict(data).ui_language
-        except (IndexError, OSError, ValueError, TypeError):
-            pass
-    return load_user_config().ui_language
-
-
 if __name__ == "__main__":
-    import argparse
-    import sys
-    # 西欧ロケールの console (cp1252 等) でも --help/--batch の日本語出力で
-    # 落ちないよう標準入出力を UTF-8 に寄せる。GUI 動作には無影響。
-    for _stream in (sys.stdout, sys.stderr):
-        try:
-            _stream.reconfigure(encoding="utf-8")
-        except Exception:
-            pass
-    _cli_language = _preferred_cli_language(sys.argv[1:])
-    _parser = argparse.ArgumentParser(
-        description=tr(_cli_language, "cli.description"), add_help=False)
-    _parser.add_argument(
-        "-h", "--help", action="help", help=tr(_cli_language, "cli.help"))
-    _parser.add_argument(
-        "--batch", nargs=2,
-        metavar=(tr(_cli_language, "cli.input_metavar"),
-                 tr(_cli_language, "cli.output_metavar")),
-        help=tr(_cli_language, "cli.batch_help"))
-    _parser.add_argument(
-        "--config", default=None, help=tr(_cli_language, "cli.config_help"))
-    _parser.add_argument(
-        "--lang", choices=("ja", "en"), default=None,
-        help=tr(_cli_language, "cli.lang_help"))
-    _args = _parser.parse_args()
-    if _args.batch:
-        raise SystemExit(run_batch_cli(
-            _args.batch[0], _args.batch[1], _args.config, _args.lang))
-    App(language_override=_args.lang).mainloop()
+    configure_console()
+    raise SystemExit(main())

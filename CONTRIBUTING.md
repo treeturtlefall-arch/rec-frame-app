@@ -40,3 +40,14 @@ Linux の場合 tkinter が別途必要です（CI 参照）: `sudo apt-get inst
 - バグ報告・機能要望は Issue テンプレートに沿って記載してください
 - PR はテンプレートのチェックリストを埋めてください。CI（Python 3.11/3.12 × Ubuntu/Windows）が通過することが条件です
 - リリース（`v*` タグ打ち・exe 配布）はメンテナが行います
+
+### ひとり開発での使い方
+
+1. Issueを作り、「何を直すか」「どこまで直せば完了か」を書く。コード整理には「リファクタリング / Refactoring」テンプレートを使えます。
+2. `codex/` で始まる作業ブランチを作り、変更とテストを行う。
+3. 公開対象の差分を確認し、変更をコミットして作業ブランチをpushする。ローカルの検証画像・作業メモ・秘密情報は含めません。
+4. `main` 向けのDraft PRを作り、目的・変更点・テスト結果を書く。Issue番号が確定したら、本文に `Closes #番号` を入れて紐付けます。
+5. PRの「Files changed」で差分、「Checks」でCI結果を確認する。準備ができたらレビュー可能な状態へ切り替え、マージする。
+
+Issueは作業の目的を残す場所、PRはその変更を確認する場所です。Draft PRは確認中の変更として公開でき、Draftのままではマージできません。
+詳細は [GitHubのIssueガイド](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues) と [PRガイド](https://docs.github.com/en/pull-requests/reference/pull-requests) を参照してください。

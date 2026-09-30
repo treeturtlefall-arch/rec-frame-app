@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- 現行GUIから呼ばれない旧UIの組み立て処理を削除。
+- CLIの引数解析・言語選択・一括処理をGUI非依存の `rec_cli.py` へ分離。既存の起動コマンドと `rec_frame_app.run_batch_cli` は維持。
+
 ## [0.2.0] - 2026-09-18
 
 ### Added
