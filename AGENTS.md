@@ -16,12 +16,13 @@ tkinter アプリ。任意画像にファインダー風オーバーレイ（四
 
 ## 構成
 
-- `rec_frame_app.py` — GUI 薄層＋エントリーポイント（開く / プレビュー / 保存 / 一括処理... / CLI `--batch`）。画像生成の実体は持たない。
+- `rec_frame_app.py` — GUI 薄層＋エントリーポイント（開く / プレビュー / 保存 / 一括処理...）。`main()` が GUI / CLI を振り分ける。画像生成の実体は持たない。
+- `rec_cli.py` — GUI 非依存の引数解析・CLI `--batch`。`run_batch_cli` は `rec_frame_app.py` からも後方互換で再エクスポートする。
 - `rec_overlay.py` — 純粋な画像生成層（GUI 非依存）。`create_rec_overlay_with_config()` / `composite_with_config()` が正本。`create_rec_overlay()` / `composite_with_overlay()` は後方互換の再エクスポート。`load_base_image()` / `save_composited_image()` / `apply_ui_effects()` を持つ。
 - `rec_config.py` — `OverlayConfig`（描画設定＋`ui_language`、`schema_version=8`）＋設定I/O・日時・カスタムフォント helpers。`DEFAULT_FONT` は `Arial Narrow Bold(細長)`。
 - `rec_i18n.py` — GUI・ダイアログ・バッチ・CLIで共有する日英翻訳層。内部設定キーと翻訳表示名を分離し、欠落キーは日本語へフォールバック。
 - `rec_batch.py` — フォルダ一括処理の純粋ロジック。`process_folder()` / `process_single_file()` / `resolve_output_path()`。合成は `composite_with_config` 委譲で GUI と完全一致。
-- `tests/` — pytest（等距離・同寸出力・全フォント描画・設定記憶・バッチ・カスタムフォント・撮影日時・GUI/バッチ描画一致・本番UI状態遷移・日英切替・`conftest.py` 共通ヘルパー。計220件）。`test_dist.py` は配布spec・ワークフローの静的検査（exeのビルド・バイト一致検証は行わない）。GUI関連はTk画面が使えない環境ではスキップする。
+- `tests/` — pytest（等距離・同寸出力・全フォント描画・設定記憶・バッチ・カスタムフォント・撮影日時・GUI/バッチ描画一致・本番UI状態遷移・日英切替・CLI起動分岐・`conftest.py` 共通ヘルパー。計231件）。`test_dist.py` は配布spec・ワークフローの静的検査（exeのビルド・バイト一致検証は行わない）。GUI関連はTk画面が使えない環境ではスキップする。
 - `scripts/` — `capture_production_ui.py`（本番実画面撮影）/ `verify_production_migration.py`（隔離設定での移植統合検証）。成果は `docs/ui-redesign/production/` に保存。
 
 ## 設定・バッチ仕様
