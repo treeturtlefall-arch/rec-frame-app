@@ -2,7 +2,7 @@
 """PyInstaller 単体exe用 spec (Windows 向け・SPEC §9)。
 
 方針:
-- エントリは `rec_frame_app.py` のみ。`rec_overlay / rec_config / rec_batch` は
+- エントリは `rec_frame_app.py` のみ。`rec_cli / rec_overlay / rec_config / rec_batch` は
   通常 import のため自動で同梱される。Pillow / tkinter も hook で自動検出。
 - フォントは OS のシステムフォントを使うため `datas` 同梱なし
   (リポジトリにフォント非同梱・README に明記)。
