@@ -3,107 +3,126 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>rec-frame-app — ファインダー風オーバーレイ合成 / Viewfinder overlay compositor</title>
-<meta name="description" content="任意の画像にファインダー風オーバーレイ（四隅枠・電池・赤丸REC・中央十字・日時・劣化エフェクト）をベクター生成で合成。Camera viewfinder overlay baked into any image at relative scale.">
+<title>rec-frame-app — 写真を、カメラ越しの一枚に。</title>
+<meta name="description" content="写真やイラストにREC・ファインダー枠・日時を重ねるWindowsアプリ。加工前後の作例、3種のエフェクト、操作画面で機能を紹介。">
 <style>
-:root{--bg:#0b0d0f;--panel:#101418;--ink:#e8ecef;--dim:#9aa7b0;--line:#2a3238;--rec:#e33;--mono:ui-monospace,"Cascadia Mono","Courier New",monospace}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 "Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,system-ui,sans-serif}
-a{color:#7fd0c8}a:focus-visible,:focus-visible{outline:2px solid #7fd0c8;outline-offset:2px}
-.en{display:block;color:var(--dim);font-size:.85em;font-weight:400;line-height:1.6}
-.wrap{max-width:980px;margin:0 auto;padding:0 20px}
-header.vf{border-bottom:1px solid var(--line);background:#000}
-.vf-bar{display:flex;align-items:center;gap:12px;max-width:980px;margin:0 auto;padding:12px 20px;font-family:var(--mono)}
-.rec{display:inline-flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.08em}
-.rec i{width:14px;height:14px;border-radius:50%;background:var(--rec);display:inline-block;animation:blink 1.6s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.stamp{margin-left:auto;color:var(--dim)}
-.hero{padding:48px 0 24px;text-align:left}
-.hero h1{font-size:clamp(26px,4vw,40px);margin:.2em 0}
-.hero p{max-width:60em}
-.btns{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
-.btn{display:inline-block;padding:10px 18px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;background:var(--panel)}
-.btn.primary{background:#0d5c55;border-color:#0d5c55;color:#fff}
-section{padding:28px 0;border-top:1px solid var(--line)}
-h2{font-size:clamp(20px,3vw,28px)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px}
-figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-figure img{display:block;width:100%;height:auto;aspect-ratio:auto;object-fit:cover;background:#000}
-figcaption{padding:10px 12px;font-size:14px;color:var(--ink)}
-figcaption small{display:block;color:var(--dim)}
-.fxhead{padding:10px 12px 0;font-size:14px;font-weight:700}
-.fxhead small{display:block;color:var(--dim);font-weight:400}
-.shot img{aspect-ratio:116/70;object-fit:cover}
-code,pre{font-family:var(--mono);font-size:.9em}
-pre{background:#000;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto}
-ul{padding-left:1.2em}li{margin:.3em 0}
-footer{border-top:1px solid var(--line);padding:24px 0;color:var(--dim);font-size:14px}
-@media(prefers-reduced-motion:reduce){.rec i{animation:none}}
+:root{--bg:#0b0d0f;--panel:#14191d;--ink:#e8ecef;--dim:#b0bcc4;--line:#303a41;--accent:#7fd0c8;--rec:#ff4545;--mono:ui-monospace,"Cascadia Mono","Courier New",monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 "Yu Gothic UI",Meiryo,system-ui,sans-serif}
+a{color:var(--accent);text-underline-offset:4px}:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+img{display:block;width:100%;height:auto;background:#101418}
+.en{display:block;color:var(--dim);font-size:.85em;font-weight:400;line-height:1.6;margin-top:4px}
+.wrap{max-width:1080px;margin:auto;padding:0 28px}
+.vf{background:#000;border-bottom:1px solid var(--line)}
+.vf-bar{display:flex;align-items:center;gap:18px;max-width:1080px;margin:auto;padding:15px 28px;font-family:var(--mono);font-size:13px;letter-spacing:.08em}
+.rec{display:inline-flex;align-items:center;gap:8px;color:#fff}.rec i{width:10px;height:10px;border-radius:50%;background:var(--rec)}.vf-bar>a{margin-left:auto;color:var(--dim)}
+.hero{padding:52px 0 36px}.eyebrow{font:12px var(--mono);letter-spacing:.18em;color:var(--accent)}
+h1{font-size:clamp(30px,5vw,48px);line-height:1.3;margin:16px 0}.hero p{max-width:700px;color:var(--dim)}
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}.btn{display:inline-block;padding:12px 20px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;background:var(--panel)}
+.btn.primary{background:#17655e;border-color:#368d83;color:#fff;font-weight:700}.btn:hover{border-color:var(--accent)}
+.quick-nav{display:flex;flex-wrap:wrap;gap:10px 24px;padding:16px 0 22px;font-size:14px}
+section{padding:44px 0;border-top:1px solid var(--line)}.section-label{font:12px var(--mono);letter-spacing:.14em;color:var(--accent)}
+h2{font-size:clamp(24px,3vw,32px);line-height:1.4;margin:10px 0 18px}h3{font-size:20px;line-height:1.5;margin:0 0 14px}p{margin:0 0 20px}.lead{color:var(--dim);max-width:780px}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}figcaption{padding:14px 18px;font-size:14px}
+.shot-secondary{max-width:800px;margin:24px auto 0}
+.steps{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0 0;counter-reset:steps}
+.steps li{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;counter-increment:steps}.steps li:before{content:"0" counter(steps);font:14px var(--mono);color:var(--accent);display:block;margin-bottom:8px}.steps strong{display:block}
+.comparison{margin-top:28px}.pair{display:grid;grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr);gap:14px;align-items:start}.arrow{color:var(--accent);font-size:24px;text-align:center}.pair>.arrow{align-self:center}
+.tag{display:block;padding:10px 16px;border-bottom:1px solid var(--line);font:12px var(--mono);letter-spacing:.12em;color:var(--dim)}.tag.after{color:var(--accent)}
+.effects{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.effect{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}.effect h3{padding:16px 16px 0;font-size:18px}.effect figure{border:0;border-radius:0}.effect .detail{border-top:1px solid var(--line)}.detail-label{padding:8px 14px;color:var(--dim);font-size:12px}.effect p{padding:14px 16px 18px;margin:0;font-size:14px}
+.note{padding:16px 20px;border-left:3px solid var(--accent);background:var(--panel);margin-top:20px;font-size:14px}
+.feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.feature{padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}.feature p{font-size:14px;margin:16px 0 0}
+.feature-wide{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:30px;align-items:center}.feature-wide img{max-width:380px;margin:auto;border-radius:6px}
+.legend{list-style:none;padding:0;margin:20px 0 0}.legend li{display:flex;align-items:baseline;gap:14px;margin:14px 0}.number{color:var(--accent);font:16px var(--mono);border:1px solid var(--accent);border-radius:50%;width:30px;height:30px;line-height:28px;text-align:center;flex-shrink:0}
+.style-sample{margin-top:14px;border-radius:6px}.style-sample figcaption{padding:8px 12px;font-size:12px}
+.timestamp{margin:26px 0;background:#0b0d0f;border-radius:6px;overflow:hidden}.timestamp small{display:block;padding:8px 12px;color:var(--dim)}
+.batch-diagram{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);gap:10px;align-items:center;margin:24px 0}.batch-stack{display:grid;gap:10px;min-width:0}.batch-stack img{height:112px;object-fit:contain;border:1px solid var(--line);border-radius:5px}.batch-stack span{font-size:12px;color:var(--dim);text-align:center}
+.language-image{margin:26px auto;max-width:380px;border-radius:6px}.format{margin:22px 0;padding:18px 20px;background:var(--panel);border:1px solid var(--line);border-radius:8px;font-size:14px}
+details{border:1px solid var(--line);border-radius:8px;padding:16px 20px;margin-top:24px}summary{cursor:pointer;color:var(--accent)}code,pre{font-family:var(--mono);font-size:.9em}code{overflow-wrap:anywhere}pre{background:#000;border-radius:6px;padding:16px;overflow:auto;max-width:100%}pre code{overflow-wrap:normal}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--dim);font-size:13px}
+@media(max-width:700px){.wrap{padding:0 18px}.vf-bar{padding:14px 18px;gap:12px}.hero{padding-top:34px}section{padding:32px 0}.pair,.effects,.feature-grid,.feature-wide,.steps{grid-template-columns:minmax(0,1fr)}.pair{gap:10px}.pair>.arrow{transform:rotate(90deg)}.feature-wide{gap:20px}.feature{padding:20px}.feature-wide img{max-width:320px}.effects{gap:24px}.effect>figure>img{max-height:520px;object-fit:contain}.shot-secondary{margin-top:20px}.steps{gap:10px}.btn{padding:11px 16px}.quick-nav{gap:10px 18px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
-<header class="vf" aria-label="recording banner">
-<div class="vf-bar"><span class="rec"><i aria-hidden="true"></i>REC</span><span>REC FRAME</span><span class="stamp">2026/09/18 PM 08:30</span></div>
-</header>
+<header class="vf"><div class="vf-bar"><span class="rec"><i aria-hidden="true"></i>REC</span><span>REC FRAME</span><a href="https://github.com/treeturtlefall-arch/rec-frame-app">GitHub</a></div></header>
 <main class="wrap">
 <div class="hero">
-<h1>rec-frame-app <span class="en">Camera viewfinder overlay compositor</span></h1>
-<p>任意の画像にカメラのファインダー風オーバーレイ（四隅枠＋電池＋赤丸REC＋中央十字＋日時＋劣化エフェクト）を合成するGUIアプリ。透過PNGの拡大縮小ではなく画像サイズからの相対値でベクター生成するため、どんな解像度でも比率が崩れません。<span class="en">Bake a camera viewfinder overlay — corner brackets, battery, red REC dot, crosshair, timestamp, degradation effects — into any image. Vector-generated at relative scale, so any resolution keeps proportions.</span></p>
-<div class="btns">
-<a class="btn primary" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases">Releasesでexeを入手<span class="en">Get rec-frame-app.exe</span></a>
-<a class="btn" href="https://github.com/treeturtlefall-arch/rec-frame-app">GitHub<span class="en">Source &amp; docs</span></a>
-<a class="btn" href="../USECASES.md">ユースケース集<span class="en">Use cases</span></a>
+<div class="eyebrow">REC-FRAME-APP / WINDOWS</div>
+<h1>写真を、カメラ越しの一枚に。</h1>
+<p>写真やイラストに、ファインダー枠・REC・日時を。画像を開いて設定するだけで、撮影画面のような一枚を作れます。<span class="en" lang="en">Turn photos and illustrations into camera-style images with viewfinder brackets, REC and a timestamp.</span></p>
+<div class="btns"><a class="btn primary" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases">Windows版をダウンロード<span class="en" lang="en">Download for Windows · No Python needed</span></a><a class="btn" href="#ui">アプリ画面を見る<span class="en" lang="en">See the app</span></a></div>
 </div>
-</div>
-<section aria-labelledby="ex">
-<h2 id="ex">作例 / Examples</h2>
-<p>加工前後の比較ではなく、設定の違いの紹介です。<span class="en">Same overlay engine, different settings — not before/after.</span></p>
-<div class="grid">
-<figure><img src="../assets/examples/dog_clean.jpg" alt="犬の写真に黒・中・OFF（簡易）のオーバーレイ" loading="lazy"><figcaption>黒・中・OFF（簡易）<small>Black / medium / clean</small></figcaption></figure>
-<figure><img src="../assets/examples/dog_oled.jpg" alt="犬の写真に白・大・OLED＋十字＋日時（詳細）のオーバーレイ" loading="lazy"><figcaption>白・大・OLED＋十字＋日時（詳細）<small>White / large / OLED + crosshair + timestamp</small></figcaption></figure>
-<figure><img src="../assets/examples/anime_clean.jpg" alt="アニメ絵に黒・中・OFF（簡易）のオーバーレイ" loading="lazy"><figcaption>黒・中・OFF（簡易）<small>Black / medium / clean</small></figcaption></figure>
-<figure><img src="../assets/examples/anime_2000s.jpg" alt="アニメ絵に白・中・2000s＋十字＋日時（詳細）のオーバーレイ" loading="lazy"><figcaption>白・中・2000s＋十字＋日時（詳細）<small>White / medium / 2000s + crosshair + timestamp</small></figcaption></figure>
-</div>
-</section>
-<section aria-labelledby="feat">
-<h2 id="feat">機能 / Features</h2>
-<ul>
-<li>四隅枠・電池・REC・中央十字・日時（<code>YYYY/MM/DD AM/PM HH:MM</code>）の個別ON/OFF<span class="en">Per-element toggles</span></li>
-<li>枠色・枠太さ（小/中/大）・フォント・エフェクト（OFF / OLED / 2000s）<span class="en">Color, bracket weight, fonts, effects</span></li>
-<li>撮影日時モード（EXIF優先→更新時刻→固定文）<span class="en">Photo timestamp: EXIF, else mtime, else fixed text</span></li>
-<li>フォルダ一括処理（GUI＋CLI <code>--batch</code>）<span class="en">Batch a folder from GUI or CLI</span></li>
-<li>日英即時切替・設定の自動記憶<span class="en">Instant JA/EN switch, settings auto-saved</span></li>
-</ul>
-</section>
-<section aria-labelledby="fx">
-<h2 id="fx">エフェクト / Effects</h2>
-<p>エフェクトはオーバーレイ層にだけかかり、元の写真は一切変えません。CRT/VHSのような画面全体への破壊処理はコンセプトに合わないため不採用です。<span class="en">Effects touch only the overlay layer — your photo stays intact. No destructive CRT/VHS filters by design.</span></p>
-<div class="grid">
-<figure><div class="fxhead">OLED（微発光）<small>Weak bloom only — subtle glow like an OLED display</small></div><figcaption>枠や文字の背後にぼかし複製を敷く微発光。光の強さは枠色で調整されます（白がやや強め）。狙いは現代の監視カメラ・配信画面の質感。実況スクショ・フォトブース・旅行ログにおすすめ。作例は上の犬の写真2枚目です。<small>Best for: game clips, photo booths, travel logs. See the 2nd dog example above.</small></figcaption></figure>
-<figure><div class="fxhead">2000sデジカメ<small>Weak RGB shift + low-res — Y2K digicam grit</small></div><figcaption>色ずれ（弱）と低解像度化（0.5倍→等倍復元）のジャギで、平成デジカメ・防犯カメラ映像の粗さを再現。狙いは「撮られている感」の増幅。サムネ・心霊ネタ・TRPG証拠品・エモ投稿におすすめ。作例は上のアニメ絵2枚目です。<small>Best for: thumbnails, spooky posts, TRPG handouts, Y2K edits. See the 2nd anime example above.</small></figcaption></figure>
-</div>
-</section>
+<nav class="quick-nav" aria-label="紹介セクション"><a href="#ui">01 アプリ画面</a><a href="#ex">02 作例</a><a href="#fx">03 エフェクト</a><a href="#feat">04 機能</a></nav>
+
 <section aria-labelledby="ui">
-<h2 id="ui">アプリ画面 / App UI</h2>
-<div class="grid shot">
-<figure><a href="../assets/ui_simple.png"><img src="../assets/ui_simple.png" alt="アプリ画面:簡易モード" loading="lazy"></a><figcaption>簡易モード<span class="en">Simple mode (click for full size)</span></figcaption></figure>
-<figure><a href="../assets/ui_detail.png"><img src="../assets/ui_detail.png" alt="アプリ画面:詳細・表示日時タブ" loading="lazy"></a><figcaption>詳細モード<span class="en">Detail mode (click for full size)</span></figcaption></figure>
+<div class="section-label">01 / APP</div>
+<h2 id="ui">設定を変えたら、すぐプレビュー。<span class="en" lang="en">App UI · See changes as you make them</span></h2>
+<p class="lead">左でスタイルを選び、右で仕上がりを確認。まずは簡易モードで、枠・電池・RECを重ねてみましょう。<span class="en" lang="en">Choose a style on the left and preview it on the right. Simple mode adds brackets, a battery and REC.</span></p>
+<figure><a href="../assets/ui_simple.png"><img src="../assets/ui_simple.png" width="1160" height="780" alt="簡易モードのアプリ全画面。左に色・太さ・フォント・エフェクト、右にプレビュー" fetchpriority="high"></a><figcaption>簡易モード：基本のスタイルをひとつのタブで。<span class="en" lang="en">Simple mode · Click the image for full size.</span></figcaption></figure>
+<ol class="steps"><li><strong>画像を開く</strong>写真やイラストを選択。<span class="en" lang="en">Open a photo or illustration.</span></li><li><strong>設定する</strong>色・太さ・フォント・質感を選択。<span class="en" lang="en">Choose color, weight, font and effect.</span></li><li><strong>保存する</strong>仕上がりを別の画像として保存。<span class="en" lang="en">Save the result as a new image.</span></li></ol>
+<figure class="shot-secondary"><a href="../assets/ui_detail.png"><img src="../assets/ui_detail.png" width="1160" height="780" alt="詳細モードのアプリ全画面。表示・日時タブで各要素の表示と日時を設定" loading="lazy"></a><figcaption>詳細モード：十字や日時を追加し、表示する要素を選べます。<span class="en" lang="en">Detail mode · Add a crosshair or timestamp and toggle each element. Click for full size.</span></figcaption></figure>
+</section>
+
+<section aria-labelledby="ex">
+<div class="section-label">02 / BEFORE → AFTER</div>
+<h2 id="ex">いつもの画像が、撮影画面に。<span class="en" lang="en">Examples · Before and after</span></h2>
+<p class="lead">左が元画像、右がアプリで加工した画像です。<span class="en" lang="en">Original on the left, app output on the right. On mobile, before comes first.</span></p>
+<div class="comparison"><h3>写真に、RECと撮影日時を。<span class="en" lang="en">A camera-style frame for your photos</span></h3><div class="pair">
+<figure><span class="tag">BEFORE / 加工前</span><img src="../assets/landing/dog_before.jpg" width="960" height="1280" alt="加工前の犬の写真。枠やREC、日時の表示はない" loading="lazy"><figcaption>元の写真<span class="en" lang="en">Original photo</span></figcaption></figure>
+<span class="arrow" aria-hidden="true">→</span>
+<figure><span class="tag after">AFTER / 加工後</span><img src="../assets/landing/dog_oled.jpg" width="960" height="1280" alt="犬の写真に白いファインダー枠、電池、REC、中央十字、サンプル日時を重ねたOLED作例" loading="lazy"><figcaption>白枠・太さ「大」・OLED・中央十字・日時<span class="en" lang="en">White · Large · OLED · Crosshair + timestamp</span></figcaption></figure>
+</div></div>
+<div class="comparison"><h3>イラストに、デジカメの質感を。<span class="en" lang="en">A digicam look for illustrations</span></h3><div class="pair">
+<figure><span class="tag">BEFORE / 加工前</span><img src="../assets/landing/art_before.jpg" width="1024" height="1024" alt="加工前のイラスト。ファインダー表示はない" loading="lazy"><figcaption>元のイラスト<span class="en" lang="en">Original illustration</span></figcaption></figure>
+<span class="arrow" aria-hidden="true">→</span>
+<figure><span class="tag after">AFTER / 加工後</span><img src="../assets/landing/art_2000s.jpg" width="1024" height="1024" alt="イラストに白枠、電池、REC、中央十字、サンプル日時を重ねた2000s作例" loading="lazy"><figcaption>白枠・太さ「中」・2000s・中央十字・日時<span class="en" lang="en">White · Medium · 2000s · Crosshair + timestamp</span></figcaption></figure>
+</div></div>
+<p class="note">作例の日時は説明用の固定値です。<span class="en" lang="en">Timestamps shown on this page are fixed sample values.</span></p>
+</section>
+
+<section aria-labelledby="fx">
+<div class="section-label">03 / EFFECTS</div>
+<h2 id="fx">枠と文字に、3つの質感。<span class="en" lang="en">Effects · Three finishes for the overlay</span></h2>
+<p class="lead">同じ写真・白枠・太さ「大」で比較。REC周辺の拡大で、細かな違いも見てみましょう。<span class="en" lang="en">Same photo, white brackets and large weight. Only the effect changes; identical 3× crops show the detail.</span></p>
+<div class="effects">
+<article class="effect"><h3>OFF<span class="en" lang="en">Clean</span></h3><figure><img src="../assets/landing/dog_off.jpg" width="960" height="1280" alt="エフェクトOFFの犬写真。白い枠とRECはくっきりした輪郭" loading="lazy"></figure><div class="detail"><div class="detail-label">REC周辺・3倍拡大 / 3× detail</div><img src="../assets/landing/rec_off.png" width="792" height="396" alt="OFFのREC周辺を3倍拡大。文字と枠の輪郭が明瞭" loading="lazy"></div><p>くっきりした枠と文字。すっきり仕上げたいときに。<span class="en" lang="en">Crisp brackets and text for a clean finish.</span></p></article>
+<article class="effect"><h3>OLED<span class="en" lang="en">Subtle glow</span></h3><figure><img src="../assets/landing/dog_oled.jpg" width="960" height="1280" alt="OLEDの犬写真。白い枠とRECにほのかな発光" loading="lazy"></figure><div class="detail"><div class="detail-label">REC周辺・3倍拡大 / 3× detail</div><img src="../assets/landing/rec_oled.png" width="792" height="396" alt="OLEDのREC周辺を3倍拡大。文字や枠の背後に柔らかい光" loading="lazy"></div><p>ほのかな発光。画面に光る表示のような柔らかさを。<span class="en" lang="en">A gentle bloom behind the overlay, like a glowing display.</span></p></article>
+<article class="effect"><h3>2000s<span class="en" lang="en">Digicam</span></h3><figure><img src="../assets/landing/dog_2000s.jpg" width="960" height="1280" alt="2000sの犬写真。白い枠とRECに色ずれと粗さ" loading="lazy"></figure><div class="detail"><div class="detail-label">REC周辺・3倍拡大 / 3× detail</div><img src="../assets/landing/rec_2000s.png" width="792" height="396" alt="2000sのREC周辺を3倍拡大。文字や枠に色ずれとピクセル状の輪郭" loading="lazy"></div><p>色ずれと粗さ。2000年代のデジカメ風の表示に。<span class="en" lang="en">Color fringes and pixelated edges for a 2000s digicam look.</span></p></article>
+</div>
+<p class="note">エフェクトがかかるのは、重ねた枠や文字だけ。写真全体の色や質感は加工しません。<span class="en" lang="en">Effects apply only to the overlay. They do not filter the underlying photo.</span></p>
+</section>
+
+<section aria-labelledby="feat">
+<div class="section-label">04 / FEATURES</div>
+<h2 id="feat">見せたいものを、自分で選ぶ。<span class="en" lang="en">Features · Make the frame your own</span></h2>
+<div class="feature-grid">
+<article class="feature feature-wide"><img src="../assets/landing/elements.jpg" width="960" height="1280" alt="犬の完成画像に番号で示した5要素。1は四隅枠、2は電池、3はREC、4は中央十字、5は日時" loading="lazy"><div><h3>5つの要素を、個別にON／OFF。<span class="en" lang="en">Toggle each of five elements</span></h3><p>詳細モードなら、必要な表示だけを残せます。<span class="en" lang="en">In detail mode, keep only the elements you need.</span></p><ul class="legend"><li><span class="number">1</span><span>四隅のファインダー枠<span class="en" lang="en">Corner brackets</span></span></li><li><span class="number">2</span><span>電池マーク<span class="en" lang="en">Battery indicator</span></span></li><li><span class="number">3</span><span>赤丸とREC<span class="en" lang="en">Red dot + REC</span></span></li><li><span class="number">4</span><span>中央十字<span class="en" lang="en">Center crosshair</span></span></li><li><span class="number">5</span><span>日時<span class="en" lang="en">Timestamp</span></span></li></ul></div></article>
+<article class="feature"><h3>色・太さ・フォントを選ぶ。<span class="en" lang="en">Color, bracket weight and font</span></h3>
+<figure class="style-sample"><img src="../assets/landing/style_1.png" width="960" height="195" alt="同じ犬写真の上部。黒枠・太さ小・ArialのREC" loading="lazy"><figcaption>黒・小・Arial<span class="en" lang="en">Black · Small · Arial</span></figcaption></figure>
+<figure class="style-sample"><img src="../assets/landing/style_2.png" width="960" height="195" alt="同じ犬写真の上部。白枠・太さ中・Arial Narrow BoldのREC" loading="lazy"><figcaption>白・中・Arial Narrow Bold<span class="en" lang="en">White · Medium · Arial Narrow Bold</span></figcaption></figure>
+<figure class="style-sample"><img src="../assets/landing/style_3.png" width="960" height="195" alt="同じ犬写真の上部。白枠・太さ大・ConsolasのREC" loading="lazy"><figcaption>白・大・Consolas<span class="en" lang="en">White · Large · Consolas</span></figcaption></figure>
+<p>枠色は黒／白、枠太さは3段階。フォント候補10種に加え、所持フォントも登録できます。赤丸はいつも赤。<span class="en" lang="en">Black or white, three bracket weights and ten font choices, plus your own fonts. The REC dot stays red.</span></p><p>フォントはOSのものを使い、見つからない場合は代替フォントで描画します。<span class="en" lang="en">Fonts use your system; unavailable fonts fall back.</span></p></article>
+<article class="feature"><h3>日時も、写真に合わせて。<span class="en" lang="en">A timestamp for each photo</span></h3><div class="timestamp"><img src="../assets/landing/timestamp.png" width="1028" height="218" alt="犬写真の右下に表示したサンプル日時2026/09/18 PM 08:30の2倍拡大" loading="lazy"><small>日時部分・2倍拡大 / 2× detail</small></div><p>文字を手入力するか、「写真の撮影日時を使う」を選択。旅行の記録や撮影風の演出に。<span class="en" lang="en">Enter your own text or use the photo's capture time.</span></p><p>撮影日時がない画像ではファイルの更新時刻を使い、それも取得できない場合は入力した文字を使います。<span class="en" lang="en">Uses EXIF capture time, then file modification time, then your entered text.</span></p></article>
+<article class="feature"><h3>複数枚を、まとめて加工。<span class="en" lang="en">Process a whole folder</span></h3><div class="batch-diagram" role="group" aria-label="一括処理の例。犬写真とイラストを同じ白枠OLED設定で加工"><div class="batch-stack"><span>入力 / Input</span><img src="../assets/landing/dog_before.jpg" width="960" height="1280" alt="一括処理前の犬写真" loading="lazy"><img src="../assets/landing/art_before.jpg" width="1024" height="1024" alt="一括処理前のイラスト" loading="lazy"></div><span class="arrow" aria-hidden="true">→</span><div class="batch-stack"><span>出力 / Output</span><img src="../assets/landing/dog_oled.jpg" width="960" height="1280" alt="一括処理後の犬写真。白枠OLED" loading="lazy"><img src="../assets/landing/art_oled.jpg" width="1024" height="1024" alt="一括処理後のイラスト。同じ白枠OLED" loading="lazy"></div></div><p>「フォルダを一括処理…」で、現在の設定をフォルダ直下の画像に適用。同名の出力がある場合は連番で保存します。<span class="en" lang="en">Apply the current settings to images directly inside a folder. Existing output names get numbered alternatives.</span></p></article>
+<article class="feature"><h3>日本語でも、英語でも。<span class="en" lang="en">Japanese or English</span></h3><img class="language-image" src="../assets/landing/language.png" width="570" height="162" alt="アプリ上部のLanguage選択欄。現在は日本語が選択されている" loading="lazy"><p>「Language」から即時切替。開いている画像や入力を保ったまま、表示言語を変えられます。<span class="en" lang="en">Switch instantly via Language, keeping your image and inputs.</span></p><p>スタイル・日時・表示言語は自動記憶。次に起動するときも、前回の設定から始められます。<span class="en" lang="en">Style, timestamp settings and language are remembered for your next session.</span></p></article>
 </div>
 </section>
-<section aria-labelledby="use">
-<h2 id="use">使い方 / Usage</h2>
-<pre><code>.venv\Scripts\python rec_frame_app.py
-rem CLI batch (--config omitted = remembered settings)
-.venv\Scripts\python rec_frame_app.py --batch 入力フォルダ 出力フォルダ --config rec_frame_config.json
-rem English CLI
-.venv\Scripts\python rec_frame_app.py --lang en --batch input output</code></pre>
-<p>入力: PNG / JPG / JPEG / WebP / BMP（EXIF Orientation正規化）・出力: PNG / JPEG（quality=95）/ WebP。保存名は <code>{元名}_rec{拡張子}</code>。<span class="en">Input PNG/JPG/JPEG/WebP/BMP, output PNG/JPEG q95/WebP, saved as {name}_rec{ext}.</span></p>
+
+<section aria-labelledby="use"><div class="section-label">GET STARTED</div><h2 id="use">開いて、設定して、保存。<span class="en" lang="en">Three steps to your first image</span></h2>
+<ol class="steps"><li><strong>「画像を開く…」</strong>素材がないときは「サンプルで試す」から。<span class="en" lang="en">Open an image, or try the built-in sample.</span></li><li><strong>プレビューを見ながら調整</strong>日時や十字を使うなら詳細モードへ。<span class="en" lang="en">Adjust the style. Use detail mode for timestamps and crosshairs.</span></li><li><strong>「画像を保存 →」</strong>保存名は <code>{元名}_rec{拡張子}</code>。<span class="en" lang="en">Save as {name}_rec{extension}.</span></li></ol>
+<div class="format">入力：PNG / JPG / JPEG / WebP / BMP<br>出力：PNG / JPEG / WebP<span class="en" lang="en">Input: PNG, JPG, JPEG, WebP, BMP. Output: PNG, JPEG, WebP.</span></div>
+<p>使い道のアイデアは<a href="https://github.com/treeturtlefall-arch/rec-frame-app/blob/main/docs/USECASES.md">ユースケース集</a>へ。<span class="en" lang="en">Explore thumbnails, travel logs and more in the use-case guide.</span></p>
+<details><summary>Pythonからの起動・CLI一括処理 / Python &amp; CLI</summary><p>Python 3.11以上・Pillow・tkinterを使う開発者向けの例です。環境構築は<a href="https://github.com/treeturtlefall-arch/rec-frame-app#開発--development">README</a>へ。<span class="en" lang="en">For developers using Python 3.11+, Pillow and tkinter. See the README for setup.</span></p><pre><code>.venv\Scripts\python rec_frame_app.py
+
+rem Batch with remembered settings
+.venv\Scripts\python rec_frame_app.py --batch input output
+
+rem Batch with a config file and English messages
+.venv\Scripts\python rec_frame_app.py --lang en --batch input output --config rec_frame_config.json</code></pre><p>Windows版exeも <code>rec-frame-app.exe --batch input output</code> で一括処理できます。<span class="en" lang="en">The Windows executable also supports CLI batch processing.</span></p></details>
 </section>
-<section aria-labelledby="dl">
-<h2 id="dl">配布 / Download</h2>
-<p>一般ユーザーはGitHub Releasesの <code>rec-frame-app.exe</code> をDLしてダブルクリック（Python不要、約17MB）。初回は署名なしのためSmartScreenが出ます（詳細情報→実行）。<span class="en">Windows users: download rec-frame-app.exe from Releases, double-click (no Python needed). Unsigned, so SmartScreen appears on first run.</span></p>
-</section>
+<section aria-labelledby="dl"><h2 id="dl">Windowsで、すぐ試せます。<span class="en" lang="en">Download for Windows</span></h2><p>GitHub Releasesから <code>rec-frame-app.exe</code> をダウンロードして起動。Pythonのインストールは不要です。<span class="en" lang="en">Download rec-frame-app.exe from GitHub Releases and launch it. No Python installation needed.</span></p><div class="btns"><a class="btn primary" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases">Windows版をダウンロード<span class="en" lang="en">Get rec-frame-app.exe</span></a><a class="btn" href="https://github.com/treeturtlefall-arch/rec-frame-app">ソース・ドキュメント<span class="en" lang="en">Source &amp; documentation</span></a></div><p class="note">署名なしのアプリです。初回起動でSmartScreenが表示された場合は、配布元を確認して「詳細情報 → 実行」を選択してください。<span class="en" lang="en">The app is unsigned. If SmartScreen appears, verify the source before choosing More info → Run anyway.</span></p></section>
 </main>
-<footer><div class="wrap">MIT License — <a href="https://github.com/treeturtlefall-arch/rec-frame-app">treeturtlefall-arch/rec-frame-app</a></div></footer>
+<footer><div class="wrap">rec-frame-app · MIT License · <a href="https://github.com/treeturtlefall-arch/rec-frame-app">treeturtlefall-arch/rec-frame-app</a></div></footer>
 </body>
 </html>
