@@ -1,6 +1,6 @@
 [project]
 name = "rec-frame-app"
-version = "0.2.0"
+version = "0.2.1"
 description = "Camera viewfinder style overlay (corner brackets + battery + red REC dot) composited at relative scale"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -5,10 +5,17 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-17
+
 ### Changed
 
 - 現行GUIから呼ばれない旧UIの組み立て処理を削除。
 - CLIの引数解析・言語選択・一括処理をGUI非依存の `rec_cli.py` へ分離。既存の起動コマンドと `rec_frame_app.run_batch_cli` は維持。
+
+### Documentation
+
+- ランディングページ（GitHub Pages）の刷新、ポートフォリオストーリー・実画面ビフォーアフターの追加。
+- READMEの構成を一般ユーザー向けに改善（GIF＋Download先頭化）。
 
 ## [0.2.0] - 2026-09-18
 
