@@ -1,128 +1,665 @@
-<!doctype html>
-<html lang="ja">
+<!DOCTYPE html>
+<html class="dark" lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>rec-frame-app — 写真を、カメラ越しの一枚に。</title>
-<meta name="description" content="写真やイラストにREC・ファインダー枠・日時を重ねるWindowsアプリ。加工前後の作例、3種のエフェクト、操作画面で機能を紹介。">
-<style>
-:root{--bg:#0b0d0f;--panel:#14191d;--ink:#e8ecef;--dim:#b0bcc4;--line:#303a41;--accent:#7fd0c8;--rec:#ff4545;--mono:ui-monospace,"Cascadia Mono","Courier New",monospace}
-*{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 "Yu Gothic UI",Meiryo,system-ui,sans-serif}
-a{color:var(--accent);text-underline-offset:4px}:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
-img{display:block;width:100%;height:auto;background:#101418}
-.en{display:block;color:var(--dim);font-size:.85em;font-weight:400;line-height:1.6;margin-top:4px}
-.wrap{max-width:1080px;margin:auto;padding:0 28px}
-.vf{background:#000;border-bottom:1px solid var(--line)}
-.vf-bar{display:flex;align-items:center;gap:18px;max-width:1080px;margin:auto;padding:15px 28px;font-family:var(--mono);font-size:13px;letter-spacing:.08em}
-.rec{display:inline-flex;align-items:center;gap:8px;color:#fff}.rec i{width:10px;height:10px;border-radius:50%;background:var(--rec)}.vf-bar>a{margin-left:auto;color:var(--dim)}
-.hero{padding:52px 0 36px}.eyebrow{font:12px var(--mono);letter-spacing:.18em;color:var(--accent)}
-h1{font-size:clamp(30px,5vw,48px);line-height:1.3;margin:16px 0}.hero p{max-width:700px;color:var(--dim)}
-.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}.btn{display:inline-block;padding:12px 20px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;background:var(--panel)}
-.btn.primary{background:#17655e;border-color:#368d83;color:#fff;font-weight:700}.btn:hover{border-color:var(--accent)}
-.quick-nav{display:flex;flex-wrap:wrap;gap:10px 24px;padding:16px 0 22px;font-size:14px}
-section{padding:44px 0;border-top:1px solid var(--line)}.section-label{font:12px var(--mono);letter-spacing:.14em;color:var(--accent)}
-h2{font-size:clamp(24px,3vw,32px);line-height:1.4;margin:10px 0 18px}h3{font-size:20px;line-height:1.5;margin:0 0 14px}p{margin:0 0 20px}.lead{color:var(--dim);max-width:780px}
-figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}figcaption{padding:14px 18px;font-size:14px}
-.shot-secondary{max-width:800px;margin:24px auto 0}
-.steps{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0 0;counter-reset:steps}
-.steps li{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;counter-increment:steps}.steps li:before{content:"0" counter(steps);font:14px var(--mono);color:var(--accent);display:block;margin-bottom:8px}.steps strong{display:block}
-.comparison{margin-top:28px}.pair{display:grid;grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr);gap:14px;align-items:start}.arrow{color:var(--accent);font-size:24px;text-align:center}.pair>.arrow{align-self:center}
-.tag{display:block;padding:10px 16px;border-bottom:1px solid var(--line);font:12px var(--mono);letter-spacing:.12em;color:var(--dim)}.tag.after{color:var(--accent)}
-.effects{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.effect{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}.effect h3{padding:16px 16px 0;font-size:18px}.effect figure{border:0;border-radius:0}.effect .detail{border-top:1px solid var(--line)}.detail-label{padding:8px 14px;color:var(--dim);font-size:12px}.effect p{padding:14px 16px 18px;margin:0;font-size:14px}
-.note{padding:16px 20px;border-left:3px solid var(--accent);background:var(--panel);margin-top:20px;font-size:14px}
-.feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.feature{padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}.feature p{font-size:14px;margin:16px 0 0}
-.feature-wide{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:30px;align-items:center}.feature-wide img{max-width:380px;margin:auto;border-radius:6px}
-.legend{list-style:none;padding:0;margin:20px 0 0}.legend li{display:flex;align-items:baseline;gap:14px;margin:14px 0}.number{color:var(--accent);font:16px var(--mono);border:1px solid var(--accent);border-radius:50%;width:30px;height:30px;line-height:28px;text-align:center;flex-shrink:0}
-.style-sample{margin-top:14px;border-radius:6px}.style-sample figcaption{padding:8px 12px;font-size:12px}
-.timestamp{margin:26px 0;background:#0b0d0f;border-radius:6px;overflow:hidden}.timestamp small{display:block;padding:8px 12px;color:var(--dim)}
-.batch-diagram{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);gap:10px;align-items:center;margin:24px 0}.batch-stack{display:grid;gap:10px;min-width:0}.batch-stack img{height:112px;object-fit:contain;border:1px solid var(--line);border-radius:5px}.batch-stack span{font-size:12px;color:var(--dim);text-align:center}
-.language-image{margin:26px auto;max-width:380px;border-radius:6px}.format{margin:22px 0;padding:18px 20px;background:var(--panel);border:1px solid var(--line);border-radius:8px;font-size:14px}
-details{border:1px solid var(--line);border-radius:8px;padding:16px 20px;margin-top:24px}summary{cursor:pointer;color:var(--accent)}code,pre{font-family:var(--mono);font-size:.9em}code{overflow-wrap:anywhere}pre{background:#000;border-radius:6px;padding:16px;overflow:auto;max-width:100%}pre code{overflow-wrap:normal}
-footer{border-top:1px solid var(--line);padding:28px 0;color:var(--dim);font-size:13px}
-@media(max-width:700px){.wrap{padding:0 18px}.vf-bar{padding:14px 18px;gap:12px}.hero{padding-top:34px}section{padding:32px 0}.pair,.effects,.feature-grid,.feature-wide,.steps{grid-template-columns:minmax(0,1fr)}.pair{gap:10px}.pair>.arrow{transform:rotate(90deg)}.feature-wide{gap:20px}.feature{padding:20px}.feature-wide img{max-width:320px}.effects{gap:24px}.effect>figure>img{max-height:520px;object-fit:contain}.shot-secondary{margin-top:20px}.steps{gap:10px}.btn{padding:11px 16px}.quick-nav{gap:10px 18px}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-</style>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>rec-frame-app — あなたの生成画像に、もっと“実在感”を。</title>
+  <meta name="description" content="あなたの生成画像に、もっと実在感を。画像生成や写真にファインダー枠・REC・日時を重ねるWindows専用デスクトップアプリ。"/>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&amp;display=swap" rel="stylesheet"/>
+  
+  <style>
+    @layer base {
+      html, body { margin: 0; padding: 0; scroll-behavior: smooth; }
+      body { overscroll-behavior: none; }
+    }
+  </style>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-tint": "#84d5cd",
+            "secondary": "#43e188",
+            "surface-container": "#1e2022",
+            "primary-fixed-dim": "#84d5cd",
+            "surface-container-high": "#282a2c",
+            "surface-container-highest": "#333537",
+            "surface-container-lowest": "#0c0e10",
+            "surface-container-low": "#1a1c1e",
+            "surface": "#121416",
+            "background": "#121416",
+            "on-background": "#e2e2e5",
+            "on-surface": "#e2e2e5",
+            "on-surface-variant": "#bec9c7",
+            "outline": "#889391",
+            "outline-variant": "#3e4947",
+            "primary": "#9bece4",
+            "primary-container": "#7fd0c8",
+            "on-primary": "#003734",
+            "on-primary-container": "#005a54",
+            "tertiary": "#ffd4d0",
+            "tertiary-fixed-dim": "#ffb3ad"
+          },
+          fontFamily: {
+            "display-hero": ["Space Grotesk", "sans-serif"],
+            "headline-lg": ["Space Grotesk", "sans-serif"],
+            "headline-md": ["Space Grotesk", "sans-serif"],
+            "body-lg": ["Geist", "Yu Gothic UI", "Meiryo", "sans-serif"],
+            "body-md": ["Geist", "Yu Gothic UI", "Meiryo", "sans-serif"],
+            "label-mono-lg": ["Geist", "monospace"],
+            "label-mono-sm": ["Geist", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
 </head>
-<body>
-<header class="vf"><div class="vf-bar"><span class="rec"><i aria-hidden="true"></i>REC</span><span>REC FRAME</span><a href="https://github.com/treeturtlefall-arch/rec-frame-app">GitHub</a></div></header>
-<main class="wrap">
-<div class="hero">
-<div class="eyebrow">REC-FRAME-APP / WINDOWS</div>
-<h1>写真を、カメラ越しの一枚に。</h1>
-<p>写真やイラストに、ファインダー枠・REC・日時を。画像を開いて設定するだけで、撮影画面のような一枚を作れます。<span class="en" lang="en">Turn photos and illustrations into camera-style images with viewfinder brackets, REC and a timestamp.</span></p>
-<div class="btns"><a class="btn primary" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases">Windows版をダウンロード<span class="en" lang="en">Download for Windows · No Python needed</span></a><a class="btn" href="#ui">アプリ画面を見る<span class="en" lang="en">See the app</span></a></div>
-</div>
-<nav class="quick-nav" aria-label="紹介セクション"><a href="#ui">01 アプリ画面</a><a href="#ex">02 作例</a><a href="#fx">03 エフェクト</a><a href="#feat">04 機能</a></nav>
+<body class="bg-background font-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
 
-<section aria-labelledby="ui">
-<div class="section-label">01 / APP</div>
-<h2 id="ui">設定を変えたら、すぐプレビュー。<span class="en" lang="en">App UI · See changes as you make them</span></h2>
-<p class="lead">左でスタイルを選び、右で仕上がりを確認。まずは簡易モードで、枠・電池・RECを重ねてみましょう。<span class="en" lang="en">Choose a style on the left and preview it on the right. Simple mode adds brackets, a battery and REC.</span></p>
-<figure><a href="../assets/ui_simple.png"><img src="../assets/ui_simple.png" width="1160" height="780" alt="簡易モードのアプリ全画面。左に色・太さ・フォント・エフェクト、右にプレビュー" fetchpriority="high"></a><figcaption>簡易モード：基本のスタイルをひとつのタブで。<span class="en" lang="en">Simple mode · Click the image for full size.</span></figcaption></figure>
-<ol class="steps"><li><strong>画像を開く</strong>写真やイラストを選択。<span class="en" lang="en">Open a photo or illustration.</span></li><li><strong>設定する</strong>色・太さ・フォント・質感を選択。<span class="en" lang="en">Choose color, weight, font and effect.</span></li><li><strong>保存する</strong>仕上がりを別の画像として保存。<span class="en" lang="en">Save the result as a new image.</span></li></ol>
-<figure class="shot-secondary"><a href="../assets/ui_detail.png"><img src="../assets/ui_detail.png" width="1160" height="780" alt="詳細モードのアプリ全画面。表示・日時タブで各要素の表示と日時を設定" loading="lazy"></a><figcaption>詳細モード：十字や日時を追加し、表示する要素を選べます。<span class="en" lang="en">Detail mode · Add a crosshair or timestamp and toggle each element. Click for full size.</span></figcaption></figure>
-</section>
+  <!-- HEADER -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/40">
+    <div class="h-16 w-full max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="#" class="flex items-center gap-2">
+          <span class="inline-block w-3 h-3 rounded-full bg-[#ff4545] shadow-[0_0_8px_#ff4545] animate-pulse"></span>
+          <span class="font-headline-md text-xl font-bold tracking-tight text-on-surface">rec-frame-app</span>
+        </a>
+        <div class="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/60 font-label-mono-sm text-xs text-secondary">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          <span>WIN // STANDALONE</span>
+        </div>
+      </div>
+      
+      <nav class="hidden md:flex items-center gap-6">
+        <a class="font-label-mono-lg text-sm text-on-surface-variant hover:text-primary transition-colors" href="#story">Story</a>
+        <a class="font-label-mono-lg text-sm text-on-surface-variant hover:text-primary transition-colors" href="#craft">Craft</a>
+        <a class="font-label-mono-lg text-sm text-on-surface-variant hover:text-primary transition-colors" href="#effects">Effects</a>
+        <a class="font-label-mono-lg text-sm text-on-surface-variant hover:text-primary transition-colors" href="#vibe-coding">Vibe Coding</a>
+      </nav>
 
-<section aria-labelledby="ex">
-<div class="section-label">02 / BEFORE → AFTER</div>
-<h2 id="ex">いつもの画像が、撮影画面に。<span class="en" lang="en">Examples · Before and after</span></h2>
-<p class="lead">左が元画像、右がアプリで加工した画像です。<span class="en" lang="en">Original on the left, app output on the right. On mobile, before comes first.</span></p>
-<div class="comparison"><h3>写真に、RECと撮影日時を。<span class="en" lang="en">A camera-style frame for your photos</span></h3><div class="pair">
-<figure><span class="tag">BEFORE / 加工前</span><img src="../assets/landing/dog_before.jpg" width="960" height="1280" alt="加工前の犬の写真。枠やREC、日時の表示はない" loading="lazy"><figcaption>元の写真<span class="en" lang="en">Original photo</span></figcaption></figure>
-<span class="arrow" aria-hidden="true">→</span>
-<figure><span class="tag after">AFTER / 加工後</span><img src="../assets/landing/dog_oled.jpg" width="960" height="1280" alt="犬の写真に白いファインダー枠、電池、REC、中央十字、サンプル日時を重ねたOLED作例" loading="lazy"><figcaption>白枠・太さ「大」・OLED・中央十字・日時<span class="en" lang="en">White · Large · OLED · Crosshair + timestamp</span></figcaption></figure>
-</div></div>
-<div class="comparison"><h3>イラストに、デジカメの質感を。<span class="en" lang="en">A digicam look for illustrations</span></h3><div class="pair">
-<figure><span class="tag">BEFORE / 加工前</span><img src="../assets/landing/art_before.jpg" width="1024" height="1024" alt="加工前のイラスト。ファインダー表示はない" loading="lazy"><figcaption>元のイラスト<span class="en" lang="en">Original illustration</span></figcaption></figure>
-<span class="arrow" aria-hidden="true">→</span>
-<figure><span class="tag after">AFTER / 加工後</span><img src="../assets/landing/art_2000s.jpg" width="1024" height="1024" alt="イラストに白枠、電池、REC、中央十字、サンプル日時を重ねた2000s作例" loading="lazy"><figcaption>白枠・太さ「中」・2000s・中央十字・日時<span class="en" lang="en">White · Medium · 2000s · Crosshair + timestamp</span></figcaption></figure>
-</div></div>
-<p class="note">作例の日時は説明用の固定値です。<span class="en" lang="en">Timestamps shown on this page are fixed sample values.</span></p>
-</section>
+      <div class="flex items-center gap-3">
+        <a class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-low hover:bg-surface-container border border-outline-variant/50 text-on-surface-variant hover:text-on-surface transition-colors" href="https://github.com/treeturtlefall-arch/rec-frame-app" target="_blank" rel="noreferrer">
+          <span class="font-label-mono-sm text-xs">★ GitHub</span>
+        </a>
+        <a class="flex items-center gap-1 px-4 py-1.5 rounded-lg bg-primary-container text-on-primary font-label-mono-lg text-sm font-semibold hover:bg-primary transition-all shadow-[0_0_12px_rgba(127,208,200,0.3)]" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases" target="_blank" rel="noreferrer">
+          <span>Download</span>
+          <span class="material-symbols-outlined text-[16px]">download</span>
+        </a>
+      </div>
+    </div>
+  </header>
 
-<section aria-labelledby="fx">
-<div class="section-label">03 / EFFECTS</div>
-<h2 id="fx">枠と文字に、3つの質感。<span class="en" lang="en">Effects · Three finishes for the overlay</span></h2>
-<p class="lead">同じ写真・白枠・太さ「大」で比較。REC周辺の拡大で、細かな違いも見てみましょう。<span class="en" lang="en">Same photo, white brackets and large weight. Only the effect changes; identical 3× crops show the detail.</span></p>
-<div class="effects">
-<article class="effect"><h3>OFF<span class="en" lang="en">Clean</span></h3><figure><img src="../assets/landing/dog_off.jpg" width="960" height="1280" alt="エフェクトOFFの犬写真。白い枠とRECはくっきりした輪郭" loading="lazy"></figure><div class="detail"><div class="detail-label">REC周辺・3倍拡大 / 3× detail</div><img src="../assets/landing/rec_off.png" width="792" height="396" alt="OFFのREC周辺を3倍拡大。文字と枠の輪郭が明瞭" loading="lazy"></div><p>くっきりした枠と文字。すっきり仕上げたいときに。<span class="en" lang="en">Crisp brackets and text for a clean finish.</span></p></article>
-<article class="effect"><h3>OLED<span class="en" lang="en">Subtle glow</span></h3><figure><img src="../assets/landing/dog_oled.jpg" width="960" height="1280" alt="OLEDの犬写真。白い枠とRECにほのかな発光" loading="lazy"></figure><div class="detail"><div class="detail-label">REC周辺・3倍拡大 / 3× detail</div><img src="../assets/landing/rec_oled.png" width="792" height="396" alt="OLEDのREC周辺を3倍拡大。文字や枠の背後に柔らかい光" loading="lazy"></div><p>ほのかな発光。画面に光る表示のような柔らかさを。<span class="en" lang="en">A gentle bloom behind the overlay, like a glowing display.</span></p></article>
-<article class="effect"><h3>2000s<span class="en" lang="en">Digicam</span></h3><figure><img src="../assets/landing/dog_2000s.jpg" width="960" height="1280" alt="2000sの犬写真。白い枠とRECに色ずれと粗さ" loading="lazy"></figure><div class="detail"><div class="detail-label">REC周辺・3倍拡大 / 3× detail</div><img src="../assets/landing/rec_2000s.png" width="792" height="396" alt="2000sのREC周辺を3倍拡大。文字や枠に色ずれとピクセル状の輪郭" loading="lazy"></div><p>色ずれと粗さ。2000年代のデジカメ風の表示に。<span class="en" lang="en">Color fringes and pixelated edges for a 2000s digicam look.</span></p></article>
-</div>
-<p class="note">エフェクトがかかるのは、重ねた枠や文字だけ。写真全体の色や質感は加工しません。<span class="en" lang="en">Effects apply only to the overlay. They do not filter the underlying photo.</span></p>
-</section>
+  <!-- SITE-WIDE VIEWFINDER HUD OVERLAY (アプリ実機レンダラー: 枠太さ「小」+ アクセス日時タイムスタンプ) -->
+  <div class="fixed top-16 left-0 right-0 bottom-0 pointer-events-none z-40 select-none overflow-hidden">
+    <!-- Top-Left (L字枠「小」+ 電池マーク: SPEC §3.1, §3.2) -->
+    <img src="../assets/landing/hud/hud_small_top_left.png" alt="" class="absolute top-0 left-0 w-36 sm:w-56 md:w-72 h-auto opacity-80 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" aria-hidden="true"/>
+    
+    <!-- Top-Right (L字枠「小」+ 赤丸REC: SPEC §3.1, §3.3) -->
+    <img src="../assets/landing/hud/hud_small_top_right.png" alt="" class="absolute top-0 right-0 w-36 sm:w-56 md:w-72 h-auto opacity-80 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" aria-hidden="true"/>
+    
+    <!-- Bottom-Left (L字枠「小」: SPEC §3.1) -->
+    <img src="../assets/landing/hud/hud_small_bottom_left.png" alt="" class="absolute bottom-0 left-0 w-36 sm:w-56 md:w-72 h-auto opacity-80 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" aria-hidden="true"/>
+    
+    <!-- Bottom-Right (L字枠「小」+ アクセス時点の動的タイムスタンプ: SPEC §3.1, §3.5) -->
+    <div class="absolute bottom-0 right-0 w-36 sm:w-56 md:w-72 h-auto">
+      <img src="../assets/landing/hud/hud_small_bottom_right_frame.png" alt="" class="w-full h-auto opacity-80 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" aria-hidden="true"/>
+      <!-- アクセス日時に連動（アプリ標準フォント Arial Narrow Bold & 書式） -->
+      <div id="hud-access-time" class="absolute bottom-[21%] right-[16%] font-['Arial_Narrow',sans-serif] font-bold text-[11px] sm:text-sm md:text-base text-white opacity-90 tracking-wider whitespace-nowrap drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]">
+        2026/10/17 AM 10:35
+      </div>
+    </div>
+  </div>
 
-<section aria-labelledby="feat">
-<div class="section-label">04 / FEATURES</div>
-<h2 id="feat">見せたいものを、自分で選ぶ。<span class="en" lang="en">Features · Make the frame your own</span></h2>
-<div class="feature-grid">
-<article class="feature feature-wide"><img src="../assets/landing/elements.jpg" width="960" height="1280" alt="犬の完成画像に番号で示した5要素。1は四隅枠、2は電池、3はREC、4は中央十字、5は日時" loading="lazy"><div><h3>5つの要素を、個別にON／OFF。<span class="en" lang="en">Toggle each of five elements</span></h3><p>詳細モードなら、必要な表示だけを残せます。<span class="en" lang="en">In detail mode, keep only the elements you need.</span></p><ul class="legend"><li><span class="number">1</span><span>四隅のファインダー枠<span class="en" lang="en">Corner brackets</span></span></li><li><span class="number">2</span><span>電池マーク<span class="en" lang="en">Battery indicator</span></span></li><li><span class="number">3</span><span>赤丸とREC<span class="en" lang="en">Red dot + REC</span></span></li><li><span class="number">4</span><span>中央十字<span class="en" lang="en">Center crosshair</span></span></li><li><span class="number">5</span><span>日時<span class="en" lang="en">Timestamp</span></span></li></ul></div></article>
-<article class="feature"><h3>色・太さ・フォントを選ぶ。<span class="en" lang="en">Color, bracket weight and font</span></h3>
-<figure class="style-sample"><img src="../assets/landing/style_1.png" width="960" height="195" alt="同じ犬写真の上部。黒枠・太さ小・ArialのREC" loading="lazy"><figcaption>黒・小・Arial<span class="en" lang="en">Black · Small · Arial</span></figcaption></figure>
-<figure class="style-sample"><img src="../assets/landing/style_2.png" width="960" height="195" alt="同じ犬写真の上部。白枠・太さ中・Arial Narrow BoldのREC" loading="lazy"><figcaption>白・中・Arial Narrow Bold<span class="en" lang="en">White · Medium · Arial Narrow Bold</span></figcaption></figure>
-<figure class="style-sample"><img src="../assets/landing/style_3.png" width="960" height="195" alt="同じ犬写真の上部。白枠・太さ大・ConsolasのREC" loading="lazy"><figcaption>白・大・Consolas<span class="en" lang="en">White · Large · Consolas</span></figcaption></figure>
-<p>枠色は黒／白、枠太さは3段階。フォント候補10種に加え、所持フォントも登録できます。赤丸はいつも赤。<span class="en" lang="en">Black or white, three bracket weights and ten font choices, plus your own fonts. The REC dot stays red.</span></p><p>フォントはOSのものを使い、見つからない場合は代替フォントで描画します。<span class="en" lang="en">Fonts use your system; unavailable fonts fall back.</span></p></article>
-<article class="feature"><h3>日時も、写真に合わせて。<span class="en" lang="en">A timestamp for each photo</span></h3><div class="timestamp"><img src="../assets/landing/timestamp.png" width="1028" height="218" alt="犬写真の右下に表示したサンプル日時2026/09/18 PM 08:30の2倍拡大" loading="lazy"><small>日時部分・2倍拡大 / 2× detail</small></div><p>文字を手入力するか、「写真の撮影日時を使う」を選択。旅行の記録や撮影風の演出に。<span class="en" lang="en">Enter your own text or use the photo's capture time.</span></p><p>撮影日時がない画像ではファイルの更新時刻を使い、それも取得できない場合は入力した文字を使います。<span class="en" lang="en">Uses EXIF capture time, then file modification time, then your entered text.</span></p></article>
-<article class="feature"><h3>複数枚を、まとめて加工。<span class="en" lang="en">Process a whole folder</span></h3><div class="batch-diagram" role="group" aria-label="一括処理の例。犬写真とイラストを同じ白枠OLED設定で加工"><div class="batch-stack"><span>入力 / Input</span><img src="../assets/landing/dog_before.jpg" width="960" height="1280" alt="一括処理前の犬写真" loading="lazy"><img src="../assets/landing/art_before.jpg" width="1024" height="1024" alt="一括処理前のイラスト" loading="lazy"></div><span class="arrow" aria-hidden="true">→</span><div class="batch-stack"><span>出力 / Output</span><img src="../assets/landing/dog_oled.jpg" width="960" height="1280" alt="一括処理後の犬写真。白枠OLED" loading="lazy"><img src="../assets/landing/art_oled.jpg" width="1024" height="1024" alt="一括処理後のイラスト。同じ白枠OLED" loading="lazy"></div></div><p>「フォルダを一括処理…」で、現在の設定をフォルダ直下の画像に適用。同名の出力がある場合は連番で保存します。<span class="en" lang="en">Apply the current settings to images directly inside a folder. Existing output names get numbered alternatives.</span></p></article>
-<article class="feature"><h3>日本語でも、英語でも。<span class="en" lang="en">Japanese or English</span></h3><img class="language-image" src="../assets/landing/language.png" width="570" height="162" alt="アプリ上部のLanguage選択欄。現在は日本語が選択されている" loading="lazy"><p>「Language」から即時切替。開いている画像や入力を保ったまま、表示言語を変えられます。<span class="en" lang="en">Switch instantly via Language, keeping your image and inputs.</span></p><p>スタイル・日時・表示言語は自動記憶。次に起動するときも、前回の設定から始められます。<span class="en" lang="en">Style, timestamp settings and language are remembered for your next session.</span></p></article>
-</div>
-</section>
+  <main class="w-full pt-16 bg-surface min-h-screen">
+    <div class="flex flex-col w-full">
 
-<section aria-labelledby="use"><div class="section-label">GET STARTED</div><h2 id="use">開いて、設定して、保存。<span class="en" lang="en">Three steps to your first image</span></h2>
-<ol class="steps"><li><strong>「画像を開く…」</strong>素材がないときは「サンプルで試す」から。<span class="en" lang="en">Open an image, or try the built-in sample.</span></li><li><strong>プレビューを見ながら調整</strong>日時や十字を使うなら詳細モードへ。<span class="en" lang="en">Adjust the style. Use detail mode for timestamps and crosshairs.</span></li><li><strong>「画像を保存 →」</strong>保存名は <code>{元名}_rec{拡張子}</code>。<span class="en" lang="en">Save as {name}_rec{extension}.</span></li></ol>
-<div class="format">入力：PNG / JPG / JPEG / WebP / BMP<br>出力：PNG / JPEG / WebP<span class="en" lang="en">Input: PNG, JPG, JPEG, WebP, BMP. Output: PNG, JPEG, WebP.</span></div>
-<p>使い道のアイデアは<a href="https://github.com/treeturtlefall-arch/rec-frame-app/blob/main/docs/USECASES.md">ユースケース集</a>へ。<span class="en" lang="en">Explore thumbnails, travel logs and more in the use-case guide.</span></p>
-<details><summary>Pythonからの起動・CLI一括処理 / Python &amp; CLI</summary><p>Python 3.11以上・Pillow・tkinterを使う開発者向けの例です。環境構築は<a href="https://github.com/treeturtlefall-arch/rec-frame-app#開発--development">README</a>へ。<span class="en" lang="en">For developers using Python 3.11+, Pillow and tkinter. See the README for setup.</span></p><pre><code>.venv\Scripts\python rec_frame_app.py
+      <!-- HERO SECTION -->
+      <section class="relative w-full overflow-hidden px-4 sm:px-8 pt-20 pb-24 flex flex-col items-center justify-center">
+        <!-- Ambient lighting glow -->
+        <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[680px] h-[360px] bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute top-1/2 left-1/4 w-[380px] h-[380px] bg-secondary/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-rem Batch with remembered settings
-.venv\Scripts\python rec_frame_app.py --batch input output
+        <div class="relative z-10 max-w-4xl w-full flex flex-col items-center text-center">
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-container-high/90 border border-outline-variant/60 shadow-sm mb-6 backdrop-blur-md">
+            <span class="inline-block w-2 h-2 rounded-full bg-primary animate-ping"></span>
+            <span class="font-label-mono-sm text-xs tracking-wider text-primary uppercase">VIBE CODING PORTFOLIO / WINDOWS APP</span>
+          </div>
 
-rem Batch with a config file and English messages
-.venv\Scripts\python rec_frame_app.py --lang en --batch input output --config rec_frame_config.json</code></pre><p>Windows版exeも <code>rec-frame-app.exe --batch input output</code> で一括処理できます。<span class="en" lang="en">The Windows executable also supports CLI batch processing.</span></p></details>
-</section>
-<section aria-labelledby="dl"><h2 id="dl">Windowsで、すぐ試せます。<span class="en" lang="en">Download for Windows</span></h2><p>GitHub Releasesから <code>rec-frame-app.exe</code> をダウンロードして起動。Pythonのインストールは不要です。<span class="en" lang="en">Download rec-frame-app.exe from GitHub Releases and launch it. No Python installation needed.</span></p><div class="btns"><a class="btn primary" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases">Windows版をダウンロード<span class="en" lang="en">Get rec-frame-app.exe</span></a><a class="btn" href="https://github.com/treeturtlefall-arch/rec-frame-app">ソース・ドキュメント<span class="en" lang="en">Source &amp; documentation</span></a></div><p class="note">署名なしのアプリです。初回起動でSmartScreenが表示された場合は、配布元を確認して「詳細情報 → 実行」を選択してください。<span class="en" lang="en">The app is unsigned. If SmartScreen appears, verify the source before choosing More info → Run anyway.</span></p></section>
-</main>
-<footer><div class="wrap">rec-frame-app · MIT License · <a href="https://github.com/treeturtlefall-arch/rec-frame-app">treeturtlefall-arch/rec-frame-app</a></div></footer>
+          <!-- Main Headline (更新: あなたの生成画像に、もっと"実在感"を。) -->
+          <h1 class="font-display-hero text-3xl sm:text-5xl md:text-6xl text-on-surface font-bold tracking-tight max-w-3xl leading-tight">
+            あなたの生成画像に、<br class="hidden sm:inline"/>もっと<span class="text-primary tracking-normal">“実在感”</span>を。
+          </h1>
+
+          <p class="font-label-mono-lg text-xs sm:text-sm text-on-surface-variant mt-3 uppercase tracking-widest opacity-85">
+            Give your AI-generated characters and photos a sense of real presence.
+          </p>
+
+          <!-- Subheadline -->
+          <p class="font-body-lg text-base sm:text-lg text-on-surface-variant max-w-2xl mt-6 leading-relaxed">
+            ファインダー枠と日時を重ねた瞬間、ただの画像が「誰かがカメラで撮ったあの一瞬」に化けた。<br/>
+            画像生成や写真にカメラ越しの空気感を宿す、Windows専用の軽量デスクトップアプリ。
+          </p>
+
+          <!-- Feature Pills in Hero -->
+          <div class="flex flex-wrap items-center justify-center gap-3 mt-8 font-label-mono-sm text-xs text-outline font-mono">
+            <span class="px-3 py-1 rounded-full bg-surface-container border border-outline-variant/50 flex items-center gap-1.5 text-on-surface-variant">
+              <span class="material-symbols-outlined text-primary text-[15px]">straighten</span>
+              <span>相対ベクター計算 (比率崩れなし)</span>
+            </span>
+            <span class="px-3 py-1 rounded-full bg-surface-container border border-outline-variant/50 flex items-center gap-1.5 text-on-surface-variant">
+              <span class="material-symbols-outlined text-secondary text-[15px]">layers</span>
+              <span>非破壊オーバーレイ (元画像無劣化)</span>
+            </span>
+            <span class="px-3 py-1 rounded-full bg-surface-container border border-outline-variant/50 flex items-center gap-1.5 text-on-surface-variant">
+              <span class="material-symbols-outlined text-primary-fixed-dim text-[15px]">terminal</span>
+              <span>Python不要 (単体.exe)</span>
+            </span>
+          </div>
+
+          <!-- CTA Buttons -->
+          <div class="flex flex-wrap items-center justify-center gap-4 mt-8">
+            <a class="group relative inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary-container text-on-primary font-headline-md text-sm font-semibold tracking-wide hover:bg-primary transition-all shadow-[0_0_24px_rgba(127,208,200,0.35)] hover:shadow-[0_0_32px_rgba(127,208,200,0.55)]" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases" target="_blank" rel="noreferrer">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801"></path>
+              </svg>
+              <span>Windows版をダウンロード (exe)</span>
+              <span class="material-symbols-outlined text-[18px] group-hover:translate-y-0.5 transition-transform">download</span>
+            </a>
+            <a class="inline-flex items-center gap-1.5 px-5 py-3.5 rounded-xl bg-surface-container-high/60 hover:bg-surface-container-highest border border-outline-variant/60 font-label-mono-lg text-sm text-on-surface transition-all" href="#story">
+              <span>開発ストーリーを読む</span>
+              <span class="material-symbols-outlined text-primary text-[16px]">arrow_downward</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 01 / ORIGIN STORY (The Spark) -->
+      <section class="relative w-full px-4 sm:px-8 py-20 bg-surface-container-lowest border-y border-outline-variant/30" id="story">
+        <div class="max-w-5xl mx-auto flex flex-col gap-10">
+          
+          <!-- Section Header -->
+          <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 font-label-mono-sm text-xs text-primary uppercase tracking-widest mb-1">
+                <span class="w-2 h-0.5 bg-primary"></span>
+                <span>01 / ORIGIN STORY</span>
+              </div>
+              <h2 class="font-headline-lg text-2xl sm:text-3xl font-bold text-on-surface">
+                「こちらに微笑みかける女の子」と目が合った日
+              </h2>
+            </div>
+            <p class="font-label-mono-sm text-xs text-on-surface-variant font-mono">
+              THE ARTISAN'S PERSPECTIVE // INSIGHT
+            </p>
+          </div>
+
+          <!-- Narrative Text Box -->
+          <div class="relative p-6 sm:p-10 rounded-2xl bg-surface-container border border-outline-variant/50 shadow-xl overflow-hidden">
+            <div class="absolute -top-6 -right-4 font-headline-lg text-9xl text-outline-variant/10 select-none font-serif">“</div>
+            <div class="relative z-10 max-w-3xl space-y-4 font-body-lg text-base sm:text-lg text-on-surface leading-loose">
+              <p>
+                AI画像生成をしていた時。こちらに視線を向け、柔らかく微笑みかける女の子の画像が生まれました。
+              </p>
+              <blockquote class="pl-4 border-l-2 border-primary text-primary font-headline-md italic py-1">
+                『すごく可愛い。でも、もっと“そこにいるリアリティ”を出せないだろうか？』
+              </blockquote>
+              <p class="text-on-surface-variant">
+                ふと思いついたのが、ビデオカメラのファインダーでした。<br/>
+                四隅のL字枠、赤丸のREC表示、緑の電池マーク、そして右下に刻まれた撮影日時。
+              </p>
+              <p class="text-on-surface font-medium pt-2">
+                それらを重ねた瞬間、絵の中に<span class="text-primary font-semibold">『レンズを構えている撮影者の視線』</span>が生まれました。<br/>
+                ただの生成画像が、まるで<span class="text-primary font-semibold">『旅先でふと目が合って、思わずシャッターを切った記録写真』</span>のように息づき始めたのです。
+              </p>
+            </div>
+          </div>
+
+          <!-- Before / After Side-by-Side Comparison -->
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-headline-md text-lg text-on-surface flex items-center gap-2">
+                <span>Visual Evidence</span>
+                <span class="font-label-mono-sm text-xs text-primary px-2 py-0.5 rounded bg-surface-container-high font-mono">BEFORE → AFTER</span>
+              </h3>
+              <span class="font-label-mono-sm text-xs text-secondary flex items-center gap-1 font-mono">
+                <span class="material-symbols-outlined text-[15px]">visibility</span>
+                <span>レンズ越しの記憶が立ち上がる</span>
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              <!-- BEFORE CARD -->
+              <div class="flex flex-col rounded-xl bg-surface-container border border-outline-variant/40 overflow-hidden shadow-md">
+                <div class="px-4 py-2.5 bg-surface-container-high border-b border-outline-variant/40 flex items-center justify-between font-label-mono-sm text-xs">
+                  <span class="text-on-surface-variant font-semibold font-mono">BEFORE</span>
+                  <span class="text-outline font-mono">Raw AI Generation (未加工)</span>
+                </div>
+                <div class="relative w-full bg-surface-container-lowest">
+                  <img alt="加工前のAI生成イラスト" class="w-full h-auto block" src="../assets/landing/story_girl_before.jpg"/>
+                </div>
+                <div class="p-4 font-body-md text-sm text-on-surface-variant border-t border-outline-variant/30">
+                  美しいが「記号的なイラスト」。被写体と鑑賞者の間に距離があり、画面の向こう側の世界として見えてしまう。
+                </div>
+              </div>
+
+              <!-- AFTER CARD -->
+              <div class="flex flex-col rounded-xl bg-surface-container border border-primary/50 overflow-hidden shadow-[0_0_20px_rgba(127,208,200,0.15)] relative">
+                <div class="px-4 py-2.5 bg-surface-container-high border-b border-primary/30 flex items-center justify-between font-label-mono-sm text-xs">
+                  <span class="text-primary font-bold flex items-center gap-1.5 font-mono">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                    AFTER (2000s デジカメ風オーバーレイ)
+                  </span>
+                  <span class="text-secondary font-mono">Timestamp: 2026/07/02</span>
+                </div>
+                <div class="relative w-full bg-surface-container-lowest">
+                  <img alt="2000sデジカメ風オーバーレイ合成後のイラスト" class="w-full h-auto block" src="../assets/landing/story_girl_2000s.jpg"/>
+                </div>
+                <div class="p-4 font-body-md text-sm text-on-surface border-t border-primary/20">
+                  四隅のファインダー枠と日時が乗ることで、「この瞬間、誰かがカメラを向けた空気感」が宿り、実在感が跳ね上がる。
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 02 / CRAFTSMANSHIP (Engineering & Philosophy) -->
+      <section class="relative w-full px-4 sm:px-8 py-20 bg-surface" id="craft">
+        <div class="max-w-5xl mx-auto flex flex-col gap-10">
+          
+          <!-- Section Label & Heading -->
+          <div>
+            <div class="flex items-center gap-2 font-label-mono-sm text-xs text-primary uppercase tracking-widest mb-1">
+              <span class="w-2 h-0.5 bg-primary"></span>
+              <span>02 / CRAFTSMANSHIP</span>
+            </div>
+            <h2 class="font-headline-lg text-2xl sm:text-3xl font-bold text-on-surface">
+              こだわった2つの哲学
+            </h2>
+            <p class="font-body-lg text-sm sm:text-base text-on-surface-variant mt-2 max-w-2xl">
+              単なる画像加工ツールではなく、愛着ある画像への敬意を込めた設計思想。
+            </p>
+          </div>
+
+          <!-- Two Column Feature Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Card 1: Non-Destructive -->
+            <div class="flex flex-col justify-between p-6 sm:p-8 rounded-2xl bg-surface-container border border-outline-variant/50 hover:border-primary/50 transition-all group">
+              <div class="space-y-4">
+                <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <span class="material-symbols-outlined text-2xl">shield_with_heart</span>
+                </div>
+                <h3 class="font-headline-md text-xl font-bold text-on-surface">
+                  元画像は、絶対に傷つけない。<br/>
+                  <span class="text-primary text-sm font-normal">（非破壊設計）</span>
+                </h3>
+                <p class="font-body-md text-sm text-on-surface-variant leading-relaxed">
+                  レトロ感を出すために画像全体を汚す破壊フィルターはかけません。エフェクト（2000sデジカメの色収差やOLEDの微発光）がかかるのは、<strong class="text-on-surface">重ねたUIオーバーレイ層だけ</strong>。こだわって生成したイラストや大切な写真は、最高画質のまま残します。
+                </p>
+              </div>
+              <div class="mt-6 pt-4 border-t border-outline-variant/40">
+                <div class="p-2.5 rounded-lg bg-surface-container-lowest font-label-mono-sm text-xs text-primary flex items-center justify-between font-mono">
+                  <span>Original Pixels 100% Intact</span>
+                  <span class="material-symbols-outlined text-[16px] text-secondary">verified</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Vector Math -->
+            <div class="flex flex-col justify-between p-6 sm:p-8 rounded-2xl bg-surface-container border border-outline-variant/50 hover:border-primary/50 transition-all group">
+              <div class="space-y-4">
+                <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+                  <span class="material-symbols-outlined text-2xl">straighten</span>
+                </div>
+                <h3 class="font-headline-md text-xl font-bold text-on-surface">
+                  どんな解像度でも崩れない。<br/>
+                  <span class="text-secondary text-sm font-normal">（純粋ベクター相対計算）</span>
+                </h3>
+                <p class="font-body-md text-sm text-on-surface-variant leading-relaxed">
+                  透過PNG素材を引き伸ばす安直な手法は使いません。画像の縦横サイズからピクセル単位で相対計算してベクター描画。正方形イラストでもスマホの縦長写真でも、四隅のマージンと線幅は常に美しく揃います。
+                </p>
+              </div>
+              <div class="mt-6 pt-4 border-t border-outline-variant/40">
+                <div class="p-2.5 rounded-lg bg-surface-container-lowest font-label-mono-sm text-xs text-secondary flex items-center justify-between font-mono">
+                  <span>Dynamic Aspect Ratio Pixel-Perfect</span>
+                  <span class="material-symbols-outlined text-[16px] text-secondary">crop_free</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- レイヤー分解の視覚的実証 (原本 + フレームのみ = 完成画像) -->
+          <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/40 flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 font-label-mono-sm text-xs text-primary font-mono">
+                <span class="material-symbols-outlined text-[16px]">layers</span>
+                <span>NON-DESTRUCTIVE ARCHITECTURE // レイヤー合成の分解実証</span>
+              </div>
+              <span class="font-label-mono-sm text-xs text-secondary font-mono">LOSSLESS BLEND</span>
+            </div>
+
+            <!-- 3段階の式: A + B = C -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
+              
+              <!-- 1. 原本画像 -->
+              <div class="flex-1 w-full flex flex-col rounded-xl bg-surface-container border border-outline-variant/50 overflow-hidden shadow">
+                <div class="px-3 py-1.5 bg-surface-container-high border-b border-outline-variant/40 font-mono text-[11px] text-on-surface-variant flex justify-between items-center">
+                  <span class="font-bold">01. 原本画像 (Base)</span>
+                  <span class="text-outline">RAW</span>
+                </div>
+                <div class="bg-surface-container-lowest">
+                  <img alt="犬のオリジナル原本画像" class="w-full h-auto block" src="../assets/landing/craft_layer1_base.jpg" loading="lazy"/>
+                </div>
+                <div class="p-2 text-[11px] text-on-surface-variant font-mono text-center bg-surface-container-lowest border-t border-outline-variant/20">
+                  元のピクセルは一切無劣化
+                </div>
+              </div>
+
+              <!-- プラス記号 -->
+              <div class="flex items-center justify-center text-primary font-bold text-3xl font-mono px-1">
+                ＋
+              </div>
+
+              <!-- 2. フレームのみの透過オーバーレイ層 -->
+              <div class="flex-1 w-full flex flex-col rounded-xl bg-surface-container border border-primary/40 overflow-hidden shadow">
+                <div class="px-3 py-1.5 bg-surface-container-high border-b border-primary/30 font-mono text-[11px] text-primary flex justify-between items-center">
+                  <span class="font-bold">02. フレームのみ (Overlay)</span>
+                  <span class="text-secondary">VECTOR</span>
+                </div>
+                <!-- 透過レイヤー感を出すための市松背景パターン -->
+                <div class="bg-[radial-gradient(#303a41_1px,transparent_1px)] [background-size:10px_10px] bg-[#0c0e10]">
+                  <img alt="フレームだけの透過オーバーレイ層" class="w-full h-auto block" src="../assets/landing/craft_layer2_overlay.png" loading="lazy"/>
+                </div>
+                <div class="p-2 text-[11px] text-primary font-mono text-center bg-surface-container-lowest border-t border-outline-variant/20">
+                  同寸で独立生成された透過UI層
+                </div>
+              </div>
+
+              <!-- イコール記号 -->
+              <div class="flex items-center justify-center text-secondary font-bold text-3xl font-mono px-1">
+                ＝
+              </div>
+
+              <!-- 3. 合成結果 -->
+              <div class="flex-1 w-full flex flex-col rounded-xl bg-surface-container border border-primary/60 overflow-hidden shadow-[0_0_16px_rgba(127,208,200,0.2)]">
+                <div class="px-3 py-1.5 bg-surface-container-high border-b border-primary/40 font-mono text-[11px] text-primary font-bold flex justify-between items-center">
+                  <span class="font-bold">03. 合成完成 (Result)</span>
+                  <span class="text-secondary">ALPHA BLEND</span>
+                </div>
+                <div class="bg-surface-container-lowest">
+                  <img alt="エフェクトを追加した合成完成画像" class="w-full h-auto block" src="../assets/landing/craft_layer3_result.jpg" loading="lazy"/>
+                </div>
+                <div class="p-2 text-[11px] text-on-surface font-mono text-center bg-surface-container-lowest border-t border-outline-variant/20">
+                  原本を傷つけずに重ね合わせ
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 03 / EFFECTS & FINISHES (Visual Showcase - 白枠/黒枠 × フォント変えのこだわり作例) -->
+      <section class="relative w-full px-4 sm:px-8 py-20 bg-surface-container-lowest border-t border-outline-variant/30" id="effects">
+        <div class="max-w-5xl mx-auto flex flex-col gap-10">
+          
+          <!-- Section Header -->
+          <div class="flex flex-col md:flex-row md:items-end justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2 font-label-mono-sm text-xs text-primary uppercase tracking-widest mb-1">
+                <span class="w-2 h-0.5 bg-primary"></span>
+                <span>03 / EFFECTS</span>
+              </div>
+              <h2 class="font-headline-lg text-2xl sm:text-3xl font-bold text-on-surface">
+                3つの質感で、世界観を変える。
+              </h2>
+            </div>
+            <span class="font-label-mono-sm text-xs text-on-surface-variant font-mono">
+              3 PRESETS × 3 FONTS // 3X REAL DETAIL
+            </span>
+          </div>
+
+          <!-- 3 Feature Cards (白枠・黒枠・フォント変えを反映) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- EFFECT CARD A: OFF (クリーン) - 白枠 / Bahnschrift(工業的) -->
+            <div class="flex flex-col rounded-xl bg-surface-container border border-outline-variant/40 overflow-hidden hover:border-outline transition-all">
+              <div class="p-3.5 bg-surface-container-high border-b border-outline-variant/40 flex items-center justify-between">
+                <div>
+                  <span class="font-headline-md font-semibold text-on-surface text-base">OFF (クリーン)</span>
+                  <span class="block font-mono text-[11px] text-on-surface-variant">白枠 × Bahnschrift (工業的)</span>
+                </div>
+                <span class="font-label-mono-sm text-xs px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant font-mono">PRESET 01</span>
+              </div>
+              <div class="relative bg-surface-container-lowest flex flex-col items-center justify-center overflow-hidden border-b border-outline-variant/30">
+                <img alt="エフェクトOFF（白枠・工業的フォント）の犬の作例" class="w-full h-44 object-cover object-top" src="../assets/landing/dog_effects_off.jpg" loading="lazy"/>
+                <div class="w-full bg-surface-container-lowest/90 px-3 py-1 flex items-center justify-between border-t border-outline-variant/20 font-mono text-[11px] text-outline">
+                  <span>REC周辺 3倍拡大 (白枠)</span>
+                  <span class="text-on-surface-variant">SHARP</span>
+                </div>
+                <img alt="OFFのREC周辺拡大" class="w-full h-24 object-cover" src="../assets/landing/rec_effects_off.png" loading="lazy"/>
+              </div>
+              <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                <p class="font-body-md text-xs text-on-surface-variant leading-relaxed">
+                  くっきりした白枠と工業的フォント。一切のにじみを排除し、測定機器や軍用HUDのような硬質で洗練された仕上げに。
+                </p>
+                <div class="font-label-mono-sm text-xs text-outline flex items-center gap-1 font-mono">
+                  <span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                  <span>FILTER: NONE / SOLID CRISP</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- EFFECT CARD B: OLED (微発光) - 黒枠 / Consolas(等幅) -->
+            <div class="flex flex-col rounded-xl bg-surface-container border border-primary/40 overflow-hidden hover:border-primary transition-all shadow-[0_0_20px_rgba(127,208,200,0.15)]">
+              <div class="p-3.5 bg-surface-container-high border-b border-primary/30 flex items-center justify-between">
+                <div>
+                  <span class="font-headline-md font-semibold text-primary text-base">OLED (微発光)</span>
+                  <span class="block font-mono text-[11px] text-primary-fixed-dim">黒枠 × Consolas (等幅)</span>
+                </div>
+                <span class="font-label-mono-sm text-xs px-2 py-0.5 rounded bg-primary/20 text-primary font-mono">PRESET 02</span>
+              </div>
+              <div class="relative bg-surface-container-lowest flex flex-col items-center justify-center overflow-hidden border-b border-primary/20">
+                <img alt="OLED微発光（黒枠・等幅フォント）の犬の作例" class="w-full h-44 object-cover object-top" src="../assets/landing/dog_effects_oled.jpg" loading="lazy"/>
+                <div class="w-full bg-surface-container-lowest/90 px-3 py-1 flex items-center justify-between border-t border-outline-variant/20 font-mono text-[11px] text-primary">
+                  <span>REC周辺 3倍拡大 (黒枠)</span>
+                  <span class="text-primary font-bold">BLOOM</span>
+                </div>
+                <img alt="OLEDのREC周辺拡大" class="w-full h-24 object-cover" src="../assets/landing/rec_effects_oled.png" loading="lazy"/>
+              </div>
+              <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                <p class="font-body-md text-xs text-on-surface leading-relaxed">
+                  黒枠の背後に柔らかく広がる発光オーラ。等幅フォントと相まって、小型端末の液晶ディスプレイを覗いているような温かみ。
+                </p>
+                <div class="font-label-mono-sm text-xs text-primary flex items-center gap-1 font-mono">
+                  <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  <span>FILTER: GAUSSIAN BLOOM</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- EFFECT CARD C: 2000s (デジカメ) - 白枠 / Arial Narrow Bold(細長) -->
+            <div class="flex flex-col rounded-xl bg-surface-container border border-outline-variant/40 overflow-hidden hover:border-tertiary-fixed-dim transition-all">
+              <div class="p-3.5 bg-surface-container-high border-b border-outline-variant/40 flex items-center justify-between">
+                <div>
+                  <span class="font-headline-md font-semibold text-tertiary-fixed-dim text-base">2000s (デジカメ)</span>
+                  <span class="block font-mono text-[11px] text-on-surface-variant">白枠 × Arial Narrow Bold (細長)</span>
+                </div>
+                <span class="font-label-mono-sm text-xs px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant font-mono">PRESET 03</span>
+              </div>
+              <div class="relative bg-surface-container-lowest flex flex-col items-center justify-center overflow-hidden border-b border-outline-variant/30">
+                <img alt="2000sデジカメ風（白枠・細長フォント）の犬の作例" class="w-full h-44 object-cover object-top" src="../assets/landing/dog_effects_2000s.jpg" loading="lazy"/>
+                <div class="w-full bg-surface-container-lowest/90 px-3 py-1 flex items-center justify-between border-t border-outline-variant/20 font-mono text-[11px] text-tertiary-fixed-dim">
+                  <span>REC周辺 3倍拡大 (白枠)</span>
+                  <span class="text-tertiary-fixed-dim font-bold">RGB SHIFT</span>
+                </div>
+                <img alt="2000sのREC周辺拡大" class="w-full h-24 object-cover" src="../assets/landing/rec_effects_2000s.png" loading="lazy"/>
+              </div>
+              <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                <p class="font-body-md text-xs text-on-surface-variant leading-relaxed">
+                  わずかな色ずれ（RGBシフト）と低解像化の粗さ。往年のデジカメを彷彿とさせる細長フォントで、平成レトロの質感を再現。
+                </p>
+                <div class="font-label-mono-sm text-xs text-tertiary-fixed-dim flex items-center gap-1 font-mono">
+                  <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
+                  <span>FILTER: CHROMATIC SHIFT</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- App UI Showcase Preview -->
+          <div class="mt-4 p-6 rounded-2xl bg-surface-container border border-outline-variant/40">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div class="space-y-3 max-w-md">
+                <div class="flex items-center gap-2 font-label-mono-sm text-xs text-secondary font-mono">
+                  <span class="material-symbols-outlined text-[16px]">desktop_windows</span>
+                  <span>DESKTOP GUI INTERFACE</span>
+                </div>
+                <h3 class="font-headline-md text-xl font-bold text-on-surface">直感的なデスクトップUI</h3>
+                <p class="font-body-md text-sm text-on-surface-variant leading-relaxed">
+                  左でスタイルを選び、右ですぐにプレビュー。簡易モードでシンプルに使うことも、詳細モードで十字や日時の位置・フォント（10種＋カスタム）を細かく詰めることも可能です。
+                </p>
+              </div>
+              <div class="w-full md:w-3/5 rounded-xl overflow-hidden border border-outline-variant/60 shadow-xl">
+                <img alt="アプリの操作画面" class="w-full h-auto" src="../assets/ui_simple.png" loading="lazy"/>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 04 / VIBE CODING (Inspiration & Call to Action) -->
+      <section class="relative w-full px-4 sm:px-8 py-24 bg-surface overflow-hidden" id="vibe-coding">
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 w-[600px] h-[600px] rounded-full border border-outline-variant/20 pointer-events-none"></div>
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 w-[450px] h-[450px] rounded-full border border-primary/10 pointer-events-none"></div>
+
+        <div class="max-w-4xl mx-auto flex flex-col items-start gap-8 relative z-10">
+          
+          <!-- Section Label -->
+          <div class="flex items-center gap-2 font-label-mono-sm text-xs text-primary uppercase tracking-widest">
+            <span class="w-2 h-0.5 bg-primary"></span>
+            <span>04 / VIBE CODING</span>
+          </div>
+
+          <!-- Headline -->
+          <h2 class="font-display-hero text-3xl sm:text-4xl md:text-5xl text-on-surface leading-tight font-bold">
+            「自分のほしい」は、<br/>
+            AIと一緒にここまで作れる。
+          </h2>
+
+          <!-- Story Copy -->
+          <div class="space-y-4 font-body-lg text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-3xl">
+            <p>
+              このアプリはPython標準の <code class="text-primary font-mono bg-surface-container px-2 py-0.5 rounded">tkinter</code> と <code class="text-primary font-mono bg-surface-container px-2 py-0.5 rounded">Pillow</code> だけで作られています。重いフレームワークは一切使わず、単体exeでサクッと動くミニマルな快感。
+            </p>
+            <p>
+              AIと対話しながら、ピクセル単位の挙動を詰め、テストを書き、パッケージングする。<br/>
+              『こんなのあったらいいな』という思いつきから、手触りの良いデスクトップアプリが数日で形になりました。
+            </p>
+            <p class="text-on-surface font-semibold pt-2 text-lg">
+              次はあなたが、あなたの『ほしい』を形にする番です。
+            </p>
+          </div>
+
+          <!-- Tech Stack Badges -->
+          <div class="flex flex-wrap items-center gap-2 pt-2">
+            <span class="px-3 py-1 rounded-md bg-surface-container-high border border-outline-variant/60 font-label-mono-sm text-xs text-on-surface font-mono">
+              Python Standard Lib
+            </span>
+            <span class="px-3 py-1 rounded-md bg-surface-container-high border border-outline-variant/60 font-label-mono-sm text-xs text-primary font-mono">
+              Tkinter GUI
+            </span>
+            <span class="px-3 py-1 rounded-md bg-surface-container-high border border-outline-variant/60 font-label-mono-sm text-xs text-secondary font-mono">
+              Pillow (PIL)
+            </span>
+            <span class="px-3 py-1 rounded-md bg-surface-container-high border border-outline-variant/60 font-label-mono-sm text-xs text-on-surface font-mono">
+              PyInstaller Bundled
+            </span>
+            <span class="px-3 py-1 rounded-md bg-primary-container/20 border border-primary/40 font-label-mono-sm text-xs text-primary font-bold font-mono">
+              Zero Dependencies (17MB Standalone .exe)
+            </span>
+          </div>
+
+          <!-- Conversion CTA Box -->
+          <div class="w-full mt-4 p-6 sm:p-8 rounded-2xl bg-surface-container-low border border-outline-variant/60 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col text-center md:text-left">
+              <span class="font-headline-md text-xl font-bold text-on-surface">rec-frame-app を体験する</span>
+              <span class="font-body-md text-xs sm:text-sm text-on-surface-variant mt-1">Windows 10 / 11 対応 (インストーラー不要・ダブルクリックで起動)</span>
+            </div>
+            
+            <div class="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
+              <a class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-primary-container text-on-primary font-headline-md text-sm font-semibold hover:bg-primary transition-all shadow-[0_0_16px_rgba(127,208,200,0.3)]" href="https://github.com/treeturtlefall-arch/rec-frame-app/releases" target="_blank" rel="noreferrer">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801"></path>
+                </svg>
+                <span>Windows版をダウンロード (exe)</span>
+              </a>
+              <a class="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/60 font-label-mono-lg text-sm text-on-surface transition-colors" href="https://github.com/treeturtlefall-arch/rec-frame-app" target="_blank" rel="noreferrer">
+                <span>GitHubリポジトリ (Star歓迎 ⭐)</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40">
+    <div class="w-full max-w-7xl mx-auto px-4 sm:px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex flex-col items-center md:items-start gap-1">
+        <div class="flex items-center gap-2">
+          <span class="font-headline-md text-base font-bold tracking-tight text-on-surface">rec-frame-app</span>
+          <span class="font-label-mono-sm text-xs px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-mono">v0.2.0</span>
+        </div>
+        <p class="font-body-md text-xs text-on-surface-variant">
+          Crafted with love for AI image creators, Vibe-Coders, and retro optics enthusiasts.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-3 font-label-mono-sm text-xs">
+        <div class="flex items-center gap-1.5 px-3 py-1 rounded bg-surface-container-low border border-outline-variant/40 text-on-surface-variant">
+          <span class="material-symbols-outlined text-secondary text-[14px]">verified</span>
+          <span>MIT License</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1 rounded bg-surface-container-low border border-outline-variant/40 text-tertiary-fixed-dim">
+          <span class="material-symbols-outlined text-tertiary text-[14px]">terminal</span>
+          <span>Made with Vibe Coding &amp; AI</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- アクセス日時セット用スクリプト (アプリのformat_photo_timecodeと完全一致) -->
+  <script>
+    (function() {
+      const el = document.getElementById('hud-access-time');
+      if (!el) return;
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const hours = now.getHours();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const h12 = String(hours % 12 || 12).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      el.textContent = `${y}/${m}/${d} ${ampm} ${h12}:${min}`;
+    })();
+  </script>
+
 </body>
 </html>
