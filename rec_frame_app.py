@@ -19,7 +19,7 @@ import sys
 import tkinter as tk
 from datetime import datetime
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+from tkinter import colorchooser, filedialog, messagebox, ttk
 from tkinter import font as tkfont
 
 from PIL import Image, ImageDraw, ImageTk
@@ -31,18 +31,27 @@ from rec_cli import (
     run_batch_cli,  # 後方互換のための再エクスポート
 )
 from rec_config import (
+    ALL_BUILTIN_FONTS,
+    BUNDLED_FONT_CHOICES,
+    CLASSIC_DOT_STYLE,
+    COLOR_PRESETS,
     CUSTOM_FONT_EXTENSIONS,
+    DEFAULT_DOT_STYLE,
     DEFAULT_EFFECT,
     DEFAULT_FONT,
+    DEFAULT_RETRO_EFFECT,
+    DEFAULT_THICKNESS,
     EFFECT_CHOICES,
     FONT_CHOICES,
     SUPPORTED_EXTENSIONS,
     OverlayConfig,
     compose_timecode_text,
+    get_all_dot_styles,
     get_font_browse_start_dir,
     get_user_fonts_dir,
     is_simple_equivalent,
     load_user_config,
+    parse_color_to_rgba,
     parse_timecode_text,
     sanitize_custom_font_name,
     save_user_config,
@@ -61,6 +70,7 @@ from rec_overlay import (
 from rec_i18n import (
     LANGUAGE_NAMES,
     builtin_font_label,
+    color_label,
     effect_label,
     normalize_language,
     tr,
@@ -246,27 +256,41 @@ class App(tk.Tk):
     ):
         initial_font = (loaded.font_key if loaded.font_key in self._font_choice_values()
                         else DEFAULT_FONT)
+        initial_preset_color = loaded.custom_color.strip() if loaded.custom_color.strip() in COLOR_PRESETS else loaded.color
+        initial_thickness_key = loaded.thickness if isinstance(loaded.thickness, str) else "medium"
+        initial_thickness_num = loaded.thickness if isinstance(loaded.thickness, int) else (15 if loaded.thickness == "small" else (40 if loaded.thickness == "medium" else 65))
         values = {
             "color": loaded.color,
+            "preset_color": initial_preset_color,
+            "custom_color": loaded.custom_color,
             "font": initial_font,
-            "thickness": loaded.thickness,
+            "thickness": initial_thickness_key,
             "effect": loaded.effect,
             "mode": "simple" if is_simple_equivalent(loaded) else "detail",
             "timecode_text": loaded.timecode_text or default_timecode_text(),
             "language": normalize_language(language_override or loaded.ui_language),
+            "rec_label": loaded.rec_label or "REC",
+            "dot_style": loaded.dot_style or DEFAULT_DOT_STYLE,
         }
         for name, value in values.items():
-            setattr(self, f"{name}_var", tk.StringVar(self, value))
+            setattr(self, f"{name}_var", tk.StringVar(self, str(value)))
         for name in ("show_frame", "show_battery", "show_rec",
-                     "show_cross", "show_timecode"):
+                     "show_cross", "show_timecode", "show_red_dot"):
             setattr(self, f"{name}_var",
-                    tk.BooleanVar(self, getattr(loaded, name)))
+                    tk.BooleanVar(self, getattr(loaded, name, True)))
         self.use_exif_var = tk.BooleanVar(self, loaded.timecode_from_exif)
+        self.use_thickness_slider_var = tk.BooleanVar(self, isinstance(loaded.thickness, int))
+        self.thickness_slider_var = tk.IntVar(self, initial_thickness_num)
+        self.retro_effect_var = tk.IntVar(self, loaded.retro_effect)
+        self.bg_box_opacity_var = tk.DoubleVar(self, loaded.bg_box_opacity)
+        self.battery_bars_var = tk.IntVar(self, loaded.battery_bars)
         self._effect_label_to_key = dict(EFFECT_CHOICES)
         self.language_display_var = tk.StringVar(
             self, LANGUAGE_NAMES[self.language_var.get()])
         self.font_display_var = tk.StringVar(self)
         self.effect_display_var = tk.StringVar(self)
+        self.retro_level_display_var = tk.StringVar(self)
+        self._rec_label_edit_job = None
 
     def _language(self) -> str:
         return normalize_language(self.language_var.get())
@@ -361,14 +385,40 @@ class App(tk.Tk):
 
         page = self.style_page.content
         self._label(page, "style.color", "Section.TLabel")
-        self._choices(page, self.color_var,
-                      [("color.black", "black"), ("color.white", "white")])
+        color_grid = ttk.Frame(page)
+        color_grid.pack(fill="x")
+        color_items = [
+            ("color.black", "black"),
+            ("color.white", "white"),
+            ("color.green", "green"),
+            ("color.cyan", "cyan"),
+            ("color.red", "red"),
+            ("color.yellow", "yellow"),
+        ]
+        for index, (key, value) in enumerate(color_items):
+            rb = ttk.Radiobutton(
+                color_grid, variable=self.preset_color_var, value=value,
+                command=self._on_preset_color_changed)
+            self._remember_text(rb, key)
+            rb.grid(row=index // 2, column=index % 2, sticky="w", padx=(0, 10), pady=2)
+
+        hex_row = ttk.Frame(page)
+        hex_row.pack(fill="x", pady=(6, 2))
+        self._label(hex_row, "style.color_custom").pack(side="left", padx=(0, 6))
+        self.custom_hex_entry = ttk.Entry(hex_row, textvariable=self.custom_color_var, width=9)
+        self.custom_hex_entry.pack(side="left")
+        self.custom_hex_entry.bind("<FocusOut>", lambda _e: self._on_custom_color_typed())
+        self.custom_hex_entry.bind("<Return>", lambda _e: self._on_custom_color_typed())
+        self._button(hex_row, "action.color_pick", command=self._on_pick_color).pack(side="left", padx=(6, 2))
+        self._button(hex_row, "action.color_clear", command=self._on_clear_custom_color).pack(side="left")
         self._label(page, "style.color_hint", "Muted.TLabel", wraplength=250)
+
         self._section(page, "style.thickness")
         self._choices(page, self.thickness_var,
                       [(f"thickness.{key}", key)
                        for key in ("small", "medium", "large")])
         self._label(page, "style.thickness_hint", "Muted.TLabel", wraplength=250)
+
         self._section(page, "style.font")
         self.font_box = ttk.Combobox(
             page, textvariable=self.font_display_var,
@@ -381,13 +431,27 @@ class App(tk.Tk):
                      command=self._on_add_custom_font).pack(side="left")
         self._button(font_row, "action.font_remove",
                      command=self._on_remove_custom_font).pack(
-                         side="left", padx=6)
+                          side="left", padx=6)
+
         self._section(page, "style.effect")
         self.effect_box = ttk.Combobox(
             page, textvariable=self.effect_display_var,
             state="readonly")
         self.effect_box.pack(fill="x")
         self.effect_box.bind("<<ComboboxSelected>>", self._on_effect_selected)
+
+        retro_row = ttk.Frame(page)
+        retro_row.pack(fill="x", pady=(8, 2))
+        self._label(retro_row, "style.retro_level").pack(side="left")
+        self.retro_level_label = ttk.Label(retro_row, textvariable=self.retro_level_display_var)
+        self.retro_level_label.pack(side="right")
+        self.retro_scale = ttk.Scale(
+            page, from_=0, to=6, orient="horizontal",
+            command=self._on_retro_scale_moved)
+        self.retro_scale.set(self.retro_effect_var.get())
+        self.retro_scale.pack(fill="x")
+        self._label(page, "style.retro_level_hint", "Muted.TLabel", wraplength=250)
+        self._update_retro_level_display()
 
         self._build_redesigned_details()
         self.style_page.bind_controls()
@@ -452,6 +516,68 @@ class App(tk.Tk):
             self._detail_checks.append(widget)
             self._element_checks.append(widget)
         row.bind("<Configure>", self._layout_element_checks, add="+")
+
+        # ファインダー詳細設定 (座布団・電池残量・RECテキスト・マーク素材・太さ微調整)
+        self._section(page, "detail.customize")
+
+        bg_box_row = ttk.Frame(page)
+        bg_box_row.pack(fill="x", pady=(2, 2))
+        self._label(bg_box_row, "detail.bg_box").pack(side="left")
+        self.bg_box_label = ttk.Label(bg_box_row, text=f"{int(round(self.bg_box_opacity_var.get()*100))}%")
+        self.bg_box_label.pack(side="right")
+        self.bg_box_scale = ttk.Scale(
+            page, from_=0.0, to=1.0, orient="horizontal",
+            command=self._on_bg_box_scale_moved)
+        self.bg_box_scale.set(self.bg_box_opacity_var.get())
+        self.bg_box_scale.pack(fill="x")
+        self._label(page, "detail.bg_box_hint", "Muted.TLabel", wraplength=250)
+
+        bat_row = ttk.Frame(page)
+        bat_row.pack(fill="x", pady=(6, 2))
+        self._label(bat_row, "detail.battery_bars").pack(side="left")
+        self.bat_bars_spin = tk.Spinbox(
+            bat_row, from_=0, to=4, width=3,
+            command=self._on_battery_bars_changed)
+        self.bat_bars_spin.delete(0, tk.END)
+        self.bat_bars_spin.insert(0, str(self.battery_bars_var.get()))
+        self.bat_bars_spin.pack(side="right")
+        self.bat_bars_spin.bind("<FocusOut>", lambda _e: self._on_battery_bars_changed())
+        self.bat_bars_spin.bind("<Return>", lambda _e: self._on_battery_bars_changed())
+
+        rec_label_row = ttk.Frame(page)
+        rec_label_row.pack(fill="x", pady=(6, 2))
+        self._label(rec_label_row, "detail.rec_label").pack(side="left")
+        self.rec_label_entry = ttk.Entry(rec_label_row, textvariable=self.rec_label_var, width=12)
+        self.rec_label_entry.pack(side="right")
+        self.rec_label_var.trace_add("write", self._on_rec_label_edit)
+
+        dot_row = ttk.Frame(page)
+        dot_row.pack(fill="x", pady=(6, 2))
+        self._label(dot_row, "detail.dot_style").pack(side="left")
+        self.dot_style_box = ttk.Combobox(
+            dot_row, textvariable=self.dot_style_var,
+            values=get_all_dot_styles(), state="readonly", width=12)
+        self.dot_style_box.pack(side="right")
+        self.dot_style_box.bind("<<ComboboxSelected>>", lambda _e: self._refresh())
+        self.show_red_dot_check = ttk.Checkbutton(
+            page, variable=self.show_red_dot_var, command=self._refresh)
+        self._remember_text(self.show_red_dot_check, "detail.show_red_dot")
+        self.show_red_dot_check.pack(anchor="w", pady=(2, 4))
+
+        thick_slider_row = ttk.Frame(page)
+        thick_slider_row.pack(fill="x", pady=(4, 2))
+        self.thick_slider_check = ttk.Checkbutton(
+            thick_slider_row, variable=self.use_thickness_slider_var, command=self._refresh)
+        self._remember_text(self.thick_slider_check, "detail.thickness_slider")
+        self.thick_slider_check.pack(side="left")
+        self.thick_num_label = ttk.Label(thick_slider_row, text=str(self.thickness_slider_var.get()))
+        self.thick_num_label.pack(side="right")
+        self.thick_scale = ttk.Scale(
+            page, from_=0, to=100, orient="horizontal",
+            command=self._on_thickness_scale_moved)
+        self.thick_scale.set(self.thickness_slider_var.get())
+        self.thick_scale.pack(fill="x")
+        self._label(page, "detail.thickness_slider_hint", "Muted.TLabel", wraplength=250)
 
         self._section(page, "detail.time")
         self.timecode_check = ttk.Checkbutton(
@@ -531,8 +657,11 @@ class App(tk.Tk):
 
     def _font_choice_values(self) -> list[str]:
         values = list(FONT_CHOICES)
+        for name in BUNDLED_FONT_CHOICES:
+            if name not in values:
+                values.append(name)
         for name in self.custom_fonts:
-            if name not in FONT_CHOICES and name not in values:
+            if name not in values:
                 values.append(name)
         return values
 
@@ -540,10 +669,11 @@ class App(tk.Tk):
         """Comboboxの表示名と保存済みfont_keyの対応。"""
         pairs: list[tuple[str, str]] = []
         used: set[str] = set()
-        for key in FONT_CHOICES:
+        for key in list(FONT_CHOICES) + list(BUNDLED_FONT_CHOICES):
             display = builtin_font_label(key, self._language())
-            pairs.append((display, key))
-            used.add(display)
+            if display not in used:
+                pairs.append((display, key))
+                used.add(display)
         for key in self.custom_fonts:
             display = key
             if display in used:
@@ -577,10 +707,109 @@ class App(tk.Tk):
             self.effect_var.set(key)
         self.effect_display_var.set(self._effect_key_to_display[key])
 
+    def _on_preset_color_changed(self):
+        c = self.preset_color_var.get()
+        if c in ("black", "white"):
+            self.color_var.set(c)
+            self.custom_color_var.set("")
+        else:
+            self.color_var.set("white")
+            self.custom_color_var.set(c)
+        self._refresh()
+
+    def _on_custom_color_typed(self):
+        text = self.custom_color_var.get().strip()
+        if text:
+            parsed = parse_color_to_rgba(text)
+            if parsed is not None:
+                for k, v in COLOR_PRESETS.items():
+                    if parsed == v:
+                        self.preset_color_var.set(k)
+                        break
+                else:
+                    self.preset_color_var.set("")
+            self._refresh()
+        else:
+            self.preset_color_var.set(self.color_var.get())
+            self._refresh()
+
+    def _on_pick_color(self):
+        cur = self.custom_color_var.get().strip()
+        initial = cur if cur.startswith("#") else None
+        picked = colorchooser.askcolor(color=initial, parent=self)
+        if picked and picked[1]:
+            self.custom_color_var.set(picked[1].upper())
+            self.preset_color_var.set("")
+            self._refresh()
+
+    def _on_clear_custom_color(self):
+        self.custom_color_var.set("")
+        self.preset_color_var.set(self.color_var.get())
+        self._refresh()
+
+    def _on_retro_scale_moved(self, val):
+        if getattr(self, '_loading_settings', False):
+            return
+        val_int = int(round(float(val)))
+        if self.retro_effect_var.get() != val_int:
+            self.retro_effect_var.set(val_int)
+            self._update_retro_level_display()
+            if val_int == 0:
+                self.effect_var.set("off")
+            elif val_int == 2:
+                self.effect_var.set("2000s")
+            self._refresh_effect_choices()
+            self._refresh()
+
+    def _update_retro_level_display(self):
+        lvl = self.retro_effect_var.get()
+        self.retro_level_display_var.set(self._tr(f"retro.level_{lvl}"))
+
+    def _on_bg_box_scale_moved(self, val):
+        if getattr(self, '_loading_settings', False):
+            return
+        v = float(val)
+        self.bg_box_opacity_var.set(round(v, 2))
+        if hasattr(self, "bg_box_label"):
+            self.bg_box_label.config(text=f"{int(round(v * 100))}%")
+        self._refresh()
+
+    def _on_battery_bars_changed(self):
+        if getattr(self, '_loading_settings', False):
+            return
+        try:
+            val = max(0, min(4, int(self.bat_bars_spin.get())))
+        except (ValueError, tk.TclError):
+            val = 4
+        self.battery_bars_var.set(val)
+        self._refresh()
+
+    def _on_thickness_scale_moved(self, val):
+        if getattr(self, '_loading_settings', False):
+            return
+        val_int = int(round(float(val)))
+        self.thickness_slider_var.set(val_int)
+        if hasattr(self, "thick_num_label"):
+            self.thick_num_label.config(text=str(val_int))
+        if self.use_thickness_slider_var.get():
+            self._refresh()
+
+    def _on_rec_label_edit(self, *args):
+        if self._rec_label_edit_job is not None:
+            self.after_cancel(self._rec_label_edit_job)
+        self._rec_label_edit_job = self.after(300, self._refresh)
+
     def _on_effect_selected(self, _event=None):
         key = self._effect_display_to_key.get(self.effect_display_var.get())
         if key is not None:
             self.effect_var.set(key)
+            if key == "off":
+                self.retro_effect_var.set(0)
+            elif key == "2000s":
+                self.retro_effect_var.set(2)
+            if hasattr(self, "retro_scale"):
+                self.retro_scale.set(self.retro_effect_var.get())
+            self._update_retro_level_display()
             self._refresh()
 
     def _on_language_selected(self, _event=None):
@@ -616,6 +845,7 @@ class App(tk.Tk):
         self.update_idletasks()
         self._layout_element_checks()
         self.style_page._size()
+        self._update_retro_level_display()
         self.detail_page._size()
 
     def _refresh_font_choices(self) -> None:
@@ -753,12 +983,19 @@ class App(tk.Tk):
         effect = (raw_effect if raw_effect in ("off", "oled", "2000s")
                   else self._effect_label_to_key[raw_effect])
         font_key = self.font_var.get()
-        if font_key not in FONT_CHOICES and font_key not in self.custom_fonts:
+        if font_key not in ALL_BUILTIN_FONTS and font_key not in self.custom_fonts:
             font_key = DEFAULT_FONT
+        thick = (self.thickness_slider_var.get() if self.use_thickness_slider_var.get()
+                 else self.thickness_var.get())
+        custom_col = self.custom_color_var.get().strip()
+        preset = self.preset_color_var.get()
+        if preset in COLOR_PRESETS and preset not in ("black", "white") and not custom_col:
+            custom_col = preset
         return OverlayConfig(
             color=self.color_var.get(),
+            custom_color=custom_col,
             font_key=font_key,
-            thickness=self.thickness_var.get(),
+            thickness=thick,
             show_frame=self.show_frame_var.get(),
             show_battery=self.show_battery_var.get(),
             show_rec=self.show_rec_var.get(),
@@ -766,20 +1003,28 @@ class App(tk.Tk):
             show_timecode=self.show_timecode_var.get(),
             timecode_text=self.timecode_text_var.get(),
             effect=effect,
+            retro_effect=self.retro_effect_var.get(),
             custom_fonts=dict(self.custom_fonts),
             timecode_from_exif=self.use_exif_var.get(),
             ui_language=self._language(),
+            rec_label=self.rec_label_var.get().strip() or "REC",
+            show_red_dot=self.show_red_dot_var.get(),
+            dot_style=self.dot_style_var.get(),
+            battery_bars=self.battery_bars_var.get(),
+            bg_box_opacity=self.bg_box_opacity_var.get(),
         )
 
     def _current_config(self) -> OverlayConfig:
-        """描画用設定。簡易モードは show_* 全True・中央十字・日時OFF扱い (SPEC §10.2・§3.5)。"""
+        """描画用設定。簡易モードは show_* 全True・中央十字・日時・座布団・カスタムREC等は既定値扱い。"""
         cfg = self._full_config()
         if self.mode_var.get() == "simple":
             return OverlayConfig(
                 color=cfg.color,
+                custom_color=cfg.custom_color,
                 font_key=cfg.font_key,
-                thickness=cfg.thickness,
+                thickness=self.thickness_var.get(),
                 effect=cfg.effect,
+                retro_effect=cfg.retro_effect,
                 custom_fonts=dict(self.custom_fonts),
                 timecode_from_exif=cfg.timecode_from_exif,
                 ui_language=cfg.ui_language,
@@ -886,6 +1131,8 @@ class App(tk.Tk):
         return composite_with_config(self.src_image, cfg)
 
     def _refresh(self):
+        if getattr(self, "_loading_settings", False):
+            return
         manual = self.mode_var.get() == "detail" and not self.use_exif_var.get()
         self.timecode_entry.config(state="normal" if manual else "disabled")
         for widget in self._timecode_sel_widgets:

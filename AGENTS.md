@@ -12,7 +12,7 @@ tkinter アプリ。任意画像にファインダー風オーバーレイ（四
 
 - Python >=3.11 + Pillow のみ（`requirements.txt` / `pyproject.toml`: `Pillow==12.1.0`、test は `pytest`）。tkinter は標準ライブラリ（CI の Ubuntu は `python3-tk` を apt 導入）。
 - CI: `.github/workflows/ci.yml`（pytest、Python 3.11/3.12 × Ubuntu/Windows）。
-- 配布 exe: `rec-frame-app.spec`（onefile）＋ `.github/workflows/release-exe.yml`（`v*` タグで Windows ビルド→Release に `rec-frame-app.exe` 添付、手動実行可、smoke は `--help`＋`--batch` 実走）。
+- 配布 exe: `rec-frame-app.spec`（onefile、`fonts/` および `assets/dots/` を datas 同梱）＋ `.github/workflows/release-exe.yml`（`v*` タグで Windows ビルド→Release に `rec-frame-app.exe` 添付、手動実行可、smoke は `--help`＋`--batch` 実走）。
 
 ## 構成
 
@@ -22,7 +22,7 @@ tkinter アプリ。任意画像にファインダー風オーバーレイ（四
 - `rec_config.py` — `OverlayConfig`（描画設定＋`ui_language`、`schema_version=8`）＋設定I/O・日時・カスタムフォント helpers。`DEFAULT_FONT` は `Arial Narrow Bold(細長)`。
 - `rec_i18n.py` — GUI・ダイアログ・バッチ・CLIで共有する日英翻訳層。内部設定キーと翻訳表示名を分離し、欠落キーは日本語へフォールバック。
 - `rec_batch.py` — フォルダ一括処理の純粋ロジック。`process_folder()` / `process_single_file()` / `resolve_output_path()`。合成は `composite_with_config` 委譲で GUI と完全一致。
-- `tests/` — pytest（等距離・同寸出力・全フォント描画・設定記憶・バッチ・カスタムフォント・撮影日時・GUI/バッチ描画一致・本番UI状態遷移・日英切替・CLI起動分岐・`conftest.py` 共通ヘルパー。計231件）。`test_dist.py` は配布spec・ワークフローの静的検査（exeのビルド・バイト一致検証は行わない）。GUI関連はTk画面が使えない環境ではスキップする。
+- `tests/` — pytest（等距離・同寸出力・全フォント描画・設定記憶・バッチ・カスタムフォント・撮影日時・GUI/バッチ描画一致・本番UI状態遷移・日英切替・CLI起動分岐・`conftest.py` 共通ヘルパー。計241件）。`test_dist.py` は配布spec・ワークフローの静的検査（exeのビルド・バイト一致検証は行わない）。GUI関連はTk画面が使えない環境ではスキップする。
 - `scripts/` — `capture_production_ui.py`（本番実画面撮影）/ `verify_production_migration.py`（隔離設定での移植統合検証）。成果は `docs/ui-redesign/production/` に保存。
 
 ## 設定・バッチ仕様
@@ -42,7 +42,7 @@ tkinter アプリ。任意画像にファインダー風オーバーレイ（四
 - 画像は `ImageOps.exif_transpose` 経由で開く。外すとスマホ写真の向き・縦横比が外部ビューアーとずれる。
 - JPEG 保存は `convert("RGB")` して `quality=95`。PNG / WebP は RGBA のまま保存。
 - プレビューは `thumbnail()` で `canvas_label` 域に収め、`<Configure>` を 150ms デバウンス。`self.photo` の参照保持がないと GC で画像が消える。日時手入力欄の再描画・保存は 300ms デバウンス。
-- フォントは `C:/Windows/Fonts` 優先、DejaVu フォールバック、最終手段 `load_default()`。`color` 切替は枠・電池・REC 文字・十字・日時のみ対象。赤丸は常に赤。フォントはリポジトリ・exe ともに非同梱（README に明記）。
+- フォントは同梱OSSフォント6種（`fonts/`）を内蔵し、OSフォント（`C:/Windows/Fonts` 優先、DejaVu フォールバック、最終手段 `load_default()`）およびユーザー追加フォントにも対応。`color` 切替に加え `custom_color`（6色プリセット＋HEX）に対応。赤丸は常に赤（素材ドット切替可能）。
 - `rec-frame-app.spec` は `console=True` を維持すること。GUI と CLI `--batch` を 1 本の exe で兼ねるため `windowed=True` 化は禁止。
 
 ## git運用（初心者ユーザーの安全策）

@@ -1,7 +1,7 @@
 """オーバーレイ設定の定義。SPEC.md §3・§10.2 が正本。
 
 GUI・バッチ・CLI で共有するための薄い設定層。
-SPEC §10.1〜10.2 のバッチ用 JSON `{color, font_key, thickness, show_*, show_cross, show_timecode, timecode_text, ui_language}` と互換の dict 変換を持つ。
+SPEC §10.1〜10.2 のバッチ用 JSON と互換の dict 変換を持つ。
 旧 `{color, font_key}` は thickness=medium・show_*=True・show_cross=False・show_timecode=False として読込。
 """
 from __future__ import annotations
@@ -10,9 +10,10 @@ import dataclasses
 import json
 import os
 import re
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from rec_i18n import DEFAULT_LANGUAGE, LanguageKey, normalize_language, tr
 
@@ -22,6 +23,76 @@ OverlayColor = Literal["black", "white"]
 ThicknessKey = Literal["small", "medium", "large"]
 EffectKey = Literal["off", "oled", "2000s"]
 
+# カラープリセット定義 (表示名/内部キー: (R, G, B, A))
+COLOR_PRESETS: dict[str, tuple[int, int, int, int]] = {
+    "black": (0, 0, 0, 255),
+    "white": (255, 255, 255, 255),
+    "green": (0, 255, 80, 255),     # #00FF50 暗視スコープ・ナイトビジョン
+    "cyan": (0, 220, 255, 255),     # #00DCFF 近未来SF・サイバーHUD
+    "red": (255, 30, 30, 255),      # #FF1E1E 警報・エマージェンシー
+    "yellow": (255, 225, 0, 255),   # #FFE100 ハザード・注意喚起・ミリタリー測距
+}
+
+_HEX_COLOR_RE = re.compile(r"^#?([0-9a-fA-F]{3,8})$")
+
+
+def parse_color_to_rgba(val: Any) -> tuple[int, int, int, int] | None:
+    """色指定 (プリセット名 / HEXコード / RGBタプル) を RGBA タプル (0..255) に変換する。"""
+    if not val:
+        return None
+    if isinstance(val, (tuple, list)) and len(val) in (3, 4):
+        try:
+            r, g, b = [max(0, min(255, int(round(c)))) for c in val[:3]]
+            a = max(0, min(255, int(round(val[3])))) if len(val) == 4 else 255
+            return (r, g, b, a)
+        except (ValueError, TypeError):
+            return None
+    if not isinstance(val, str):
+        return None
+
+    cleaned = val.strip().lower()
+    # 1. プリセット名完全一致
+    if cleaned in COLOR_PRESETS:
+        return COLOR_PRESETS[cleaned]
+
+    # 2. プレフィックス一致 (例: "green (暗視グリーン)" -> "green")
+    first_token = cleaned.split()[0].rstrip(",;:")
+    if first_token in COLOR_PRESETS:
+        return COLOR_PRESETS[first_token]
+
+    # 3. HEXコード (#RGB, #RGBA, #RRGGBB, #RRGGBBAA)
+    m = _HEX_COLOR_RE.match(cleaned)
+    if m:
+        hex_str = m.group(1)
+        try:
+            if len(hex_str) == 3:  # #RGB
+                r = int(hex_str[0] * 2, 16)
+                g = int(hex_str[1] * 2, 16)
+                b = int(hex_str[2] * 2, 16)
+                return (r, g, b, 255)
+            elif len(hex_str) == 4:  # #RGBA
+                r = int(hex_str[0] * 2, 16)
+                g = int(hex_str[1] * 2, 16)
+                b = int(hex_str[2] * 2, 16)
+                a = int(hex_str[3] * 2, 16)
+                return (r, g, b, a)
+            elif len(hex_str) == 6:  # #RRGGBB
+                r = int(hex_str[0:2], 16)
+                g = int(hex_str[2:4], 16)
+                b = int(hex_str[4:6], 16)
+                return (r, g, b, 255)
+            elif len(hex_str) == 8:  # #RRGGBBAA
+                r = int(hex_str[0:2], 16)
+                g = int(hex_str[2:4], 16)
+                b = int(hex_str[4:6], 16)
+                a = int(hex_str[6:8], 16)
+                return (r, g, b, a)
+        except ValueError:
+            pass
+
+    return None
+
+
 # 枠太さの表示名と内部キーの対応 (GUIラジオ用)
 THICKNESS_CHOICES: dict[str, ThicknessKey] = {
     "小": "small",
@@ -30,7 +101,7 @@ THICKNESS_CHOICES: dict[str, ThicknessKey] = {
 }
 DEFAULT_THICKNESS: ThicknessKey = "medium"
 
-# REC文字に使えるフォント候補 (表示名: ファイル名)
+# REC文字に使えるOS標準フォント候補 (表示名: ファイル名, 既存10種維持)
 FONT_CHOICES: dict[str, str] = {
     "Arial(標準)": "arial.ttf",
     "Arial Narrow Bold(細長)": "ARIALNB.TTF",
@@ -45,6 +116,18 @@ FONT_CHOICES: dict[str, str] = {
 }
 DEFAULT_FONT = "Arial Narrow Bold(細長)"
 
+# 同梱オープンソースフォント候補 (表示名: ファイル名)
+BUNDLED_FONT_CHOICES: dict[str, str] = {
+    "Roboto Condensed Bold(細長)": "RobotoCondensed-Bold.ttf",
+    "Bebas Neue(縦長大文字)": "BebasNeue-Regular.ttf",
+    "DSEG7 Classic(7セグLED)": "DSEG7Classic-Bold.ttf",
+    "Share Tech Mono(等幅)": "ShareTechMono-Regular.ttf",
+    "VT323(レトロドット)": "VT323-Regular.ttf",
+    "Zen Kaku Gothic(日本語)": "ZenKakuGothicNew-Bold.ttf",
+}
+
+ALL_BUILTIN_FONTS: dict[str, str] = {**FONT_CHOICES, **BUNDLED_FONT_CHOICES}
+
 # ファインダーUI劣化エフェクトの選択肢 (表示名: 内部キー、SPEC §3.6)
 EFFECT_CHOICES: dict[str, EffectKey] = {
     "OFF(クリーン)": "off",
@@ -52,14 +135,55 @@ EFFECT_CHOICES: dict[str, EffectKey] = {
     "2000sデジカメ": "2000s",
 }
 DEFAULT_EFFECT: EffectKey = "off"
+DEFAULT_RETRO_EFFECT: int = 0
+
+CLASSIC_DOT_STYLE: str = "classic"
+DEFAULT_DOT_STYLE: str = "classic"
 
 CONFIG_SCHEMA_VERSION = 8
 
-# ユーザーが追加できるフォントの拡張子 (SPEC §5)。ttcは先頭フェイス(index=0)を使用。
 CUSTOM_FONT_EXTENSIONS: frozenset[str] = frozenset({".ttf", ".otf", ".ttc"})
+DOT_ASSET_EXTENSIONS: frozenset[str] = frozenset({".png", ".webp", ".jpg", ".jpeg"})
 
 APP_CONFIG_DIRNAME = "rec-frame-app"
 APP_CONFIG_FILENAME = "config.json"
+
+
+def get_resource_base_dir() -> Path:
+    """リソース基底パス。PyInstaller onefile実行時は _MEIPASS、通常時はリポジトリ直下。"""
+    if hasattr(sys, "_MEIPASS"):
+        return Path(getattr(sys, "_MEIPASS"))
+    return Path(__file__).resolve().parent
+
+
+def get_bundled_fonts_dir() -> Path:
+    """同梱オープンソースフォントの配置フォルダ。"""
+    return get_resource_base_dir() / "fonts"
+
+
+def get_dot_assets_dir() -> Path:
+    """同梱ドットマーク素材フォルダ。"""
+    return get_resource_base_dir() / "assets" / "dots"
+
+
+def discover_dot_assets() -> dict[str, str]:
+    """利用可能なマーク素材 `{キー: ファイルパス}` を収集する。"""
+    assets: dict[str, str] = {}
+    d = get_dot_assets_dir()
+    if d.is_dir():
+        for p in sorted(d.iterdir()):
+            if p.is_file() and p.suffix.lower() in (".png", ".webp"):
+                assets[p.stem] = str(p)
+    return assets
+
+
+def get_all_dot_styles() -> list[str]:
+    """GUI選択肢用ドットスタイル一覧 (classic -> flat_* -> glow_* -> その他)。"""
+    assets = discover_dot_assets()
+    flats = [k for k in assets if k.startswith("flat_")]
+    glows = [k for k in assets if k.startswith("glow_")]
+    others = [k for k in assets if not k.startswith("flat_") and not k.startswith("glow_")]
+    return [CLASSIC_DOT_STYLE] + flats + glows + others
 
 
 def get_user_config_path() -> Path:
@@ -104,25 +228,12 @@ def save_user_config(config: "OverlayConfig", path: Path | str | None = None) ->
 
 
 def get_user_fonts_dir() -> Path:
-    """カスタムフォントのコピー先。設定JSONと同じルート直下の `fonts/`。
-
-    絶対パス保存だと元ファイルの移動・削除に弱いため、追加時にここへ
-    コピーしてから `custom_fonts` に登録する (SPEC §5)。
-    """
+    """カスタムフォントのコピー先。設定JSONと同じルート直下の `fonts/`。"""
     return get_user_config_path().parent / "fonts"
 
 
 def get_system_font_dirs() -> list[Path]:
-    """OSのフォント格納先の候補。存在するものだけ返す (優先順)。
-
-    - Windows: `%LOCALAPPDATA%/Microsoft/Windows/Fonts` (ユーザー) →
-      `C:/Windows/Fonts` (システム)。システム側を後にしているのは、
-      `C:/Windows/Fonts` が仮想シェルフォルダのため「開く」ダイアログで
-      空に見えることがあり、通常フォルダのユーザー側の方が確実だから。
-      読み取り権限の問題ではない (`is_dir` では見える)。
-    - Linux/macOS: `/usr/share/fonts` → `~/.local/share/fonts` → `~/.fonts`
-      → macOS用 `/System/Library/Fonts` → `/Library/Fonts` → `~/Library/Fonts`
-    """
+    """OSのフォント格納先の候補。存在するものだけ返す (優先順)。"""
     candidates: list[Path] = []
     if os.name == "nt":
         local = os.environ.get("LOCALAPPDATA")
@@ -163,15 +274,18 @@ def get_font_browse_start_dir() -> Path | None:
 
 
 def is_builtin_font(font_key: str) -> bool:
-    """組込10種の表示名か。"""
-    return font_key in FONT_CHOICES
+    """組込(OS標準または同梱OSS)の表示名か。"""
+    return font_key in ALL_BUILTIN_FONTS
 
 
 def get_all_font_names(config: "OverlayConfig") -> list[str]:
-    """GUI選択肢用。組込＋カスタムの表示名一覧 (組込順→登録順)。"""
+    """GUI選択肢用。OS標準＋同梱OSS＋カスタムの表示名一覧。"""
     names = list(FONT_CHOICES)
+    for name in BUNDLED_FONT_CHOICES:
+        if name not in names:
+            names.append(name)
     for name in config.custom_fonts:
-        if name not in FONT_CHOICES:
+        if name not in names:
             names.append(name)
     return names
 
@@ -180,7 +294,7 @@ def resolve_custom_font_path(
     font_key: str, custom_fonts: dict[str, str] | None
 ) -> Path | None:
     """カスタム名に対応する実ファイル。存在しない・組込名なら None。"""
-    if not custom_fonts or font_key in FONT_CHOICES:
+    if not custom_fonts or font_key in ALL_BUILTIN_FONTS:
         return None
     raw = custom_fonts.get(font_key)
     if not raw:
@@ -191,12 +305,12 @@ def resolve_custom_font_path(
 def sanitize_custom_font_name(proposed: str, custom_fonts: dict[str, str] | None) -> str:
     """表示名の衝突回避。組込・登録済みと重なったら `名 2` / `名 3` …を付ける。"""
     base = (proposed or "").strip() or "カスタムフォント"
-    if base not in FONT_CHOICES and not (custom_fonts and base in custom_fonts):
+    if base not in ALL_BUILTIN_FONTS and not (custom_fonts and base in custom_fonts):
         return base
     i = 2
     while True:
         candidate = f"{base} {i}"
-        if candidate not in FONT_CHOICES and not (custom_fonts and candidate in custom_fonts):
+        if candidate not in ALL_BUILTIN_FONTS and not (custom_fonts and candidate in custom_fonts):
             return candidate
         i += 1
 
@@ -204,11 +318,7 @@ def sanitize_custom_font_name(proposed: str, custom_fonts: dict[str, str] | None
 def validate_custom_font_file(
     path: Path | str, language: LanguageKey = DEFAULT_LANGUAGE
 ) -> str | None:
-    """追加前の軽量検査。問題なければ None、あれば理由文を返す。
-
-    Pillowでの読込可否までは見ない (設定層にPillow依存を持ち込まない。
-    描画層 `_load_font` が失敗時は組込フォールバックする)。
-    """
+    """追加前の軽量検査。問題なければ None、あれば理由文を返す。"""
     p = Path(path)
     if not p.exists() or not p.is_file():
         return tr(language, "font.validation.missing")
@@ -228,6 +338,13 @@ def is_simple_equivalent(config: "OverlayConfig") -> bool:
         and not config.show_cross
         and not config.show_timecode
         and not config.timecode_from_exif
+        and config.bg_box_opacity == 0.0
+        and config.battery_bars == 4
+        and config.rec_label == "REC"
+        and config.show_red_dot
+        and config.dot_style == CLASSIC_DOT_STYLE
+        and not isinstance(config.thickness, int)
+        and config.custom_color == ""
     )
 
 
@@ -237,11 +354,7 @@ _TIMECODE_RE = re.compile(
 
 
 def compose_timecode_text(year, month, day, ampm, hour, minute) -> str:
-    """日時セレクタ値を `YYYY/MM/DD AM/PM HH:MM` に整形する (SPEC §10.3)。
-
-    検証は緩和：暦妥当性チェックなし。1800年・2月30日のような値もそのまま通す。
-    数値以外が渡された場合は ValueError (int変換失敗) を送出する。
-    """
+    """日時セレクタ値を `YYYY/MM/DD AM/PM HH:MM` に整形する (SPEC §10.3)。"""
     return (f"{int(year):04d}/{int(month):02d}/{int(day):02d} "
             f"{ampm} {int(hour):02d}:{int(minute):02d}")
 
@@ -263,8 +376,9 @@ class OverlayConfig:
     """オーバーレイ生成設定。将来の拡張用にスキーマバージョン付き。"""
 
     color: OverlayColor = "black"
+    custom_color: str = ""
     font_key: str = DEFAULT_FONT
-    thickness: ThicknessKey = DEFAULT_THICKNESS
+    thickness: ThicknessKey | int = DEFAULT_THICKNESS
     show_frame: bool = True
     show_battery: bool = True
     show_rec: bool = True
@@ -272,37 +386,69 @@ class OverlayConfig:
     show_timecode: bool = False
     timecode_text: str = ""
     effect: EffectKey = "off"
+    retro_effect: int = DEFAULT_RETRO_EFFECT
     custom_fonts: dict[str, str] = field(default_factory=dict)
-    # 撮影日時モード。Trueなら固定文の代わりに写真毎の日時
-    # (EXIF DateTimeOriginal→Digitized→DateTime→ファイルmtime→固定文) を使う。
     timecode_from_exif: bool = False
-    # GUI/CLIの表示言語。描画結果と簡易/詳細モード推定には影響しない。
     ui_language: LanguageKey = DEFAULT_LANGUAGE
+
+    # 詳細・カスタマイズ用フィールド (既定値は既存仕様と完全互換)
+    rec_label: str = "REC"
+    show_red_dot: bool = True
+    red_dot_visible: bool = True
+    dot_style: str = DEFAULT_DOT_STYLE
+    battery_bars: int = 4
+    margin_ratio: float | None = None
+    arm_len_ratio: float | None = None
+    bg_box_opacity: float = 0.0
 
     def __post_init__(self) -> None:
         if self.color not in ("black", "white"):
             raise ValueError(f"color must be 'black'|'white', got {self.color!r}")
+        if not isinstance(self.custom_color, str):
+            raise ValueError(f"custom_color must be str, got {self.custom_color!r}")
+        if self.custom_color.strip():
+            if parse_color_to_rgba(self.custom_color.strip()) is None:
+                raise ValueError(f"invalid custom_color: {self.custom_color!r}")
         if not isinstance(self.custom_fonts, dict):
             raise ValueError(f"custom_fonts must be dict, got {self.custom_fonts!r}")
         for k, v in self.custom_fonts.items():
             if not isinstance(k, str) or not k.strip():
                 raise ValueError(f"custom_fonts keys must be non-empty str, got {k!r}")
-            if k in FONT_CHOICES:
+            if k in ALL_BUILTIN_FONTS:
                 raise ValueError(f"custom_fonts key collides with builtin: {k!r}")
             if not isinstance(v, str) or not v.strip():
                 raise ValueError(f"custom_fonts values must be non-empty str, got {v!r}")
-        if self.font_key not in FONT_CHOICES and self.font_key not in self.custom_fonts:
+
+        if self.font_key not in ALL_BUILTIN_FONTS and self.font_key not in self.custom_fonts:
             raise ValueError(f"unknown font_key: {self.font_key!r}")
-        if self.thickness not in ("small", "medium", "large"):
+
+        if isinstance(self.thickness, int):
+            if not (0 <= self.thickness <= 100):
+                raise ValueError(f"thickness must be int 0..100, got {self.thickness!r}")
+        elif self.thickness not in ("small", "medium", "large"):
             raise ValueError(
-                f"thickness must be 'small'|'medium'|'large', got {self.thickness!r}"
+                f"thickness must be 'small'|'medium'|'large' or int 0..100, got {self.thickness!r}"
             )
+
         for key in ("show_frame", "show_battery", "show_rec", "show_cross",
-                      "show_timecode", "timecode_from_exif"):
+                      "show_timecode", "timecode_from_exif", "show_red_dot",
+                      "red_dot_visible"):
             if not isinstance(getattr(self, key), bool):
                 raise ValueError(f"{key} must be bool, got {getattr(self, key)!r}")
+
         if not isinstance(self.timecode_text, str):
             raise ValueError(f"timecode_text must be str, got {self.timecode_text!r}")
+        if not isinstance(self.rec_label, str):
+            raise ValueError(f"rec_label must be str, got {self.rec_label!r}")
+        if not isinstance(self.dot_style, str):
+            raise ValueError(f"dot_style must be str, got {self.dot_style!r}")
+        if not isinstance(self.battery_bars, int) or not (0 <= self.battery_bars <= 4):
+            raise ValueError(f"battery_bars must be int 0..4, got {self.battery_bars!r}")
+        if not isinstance(self.bg_box_opacity, (int, float)) or not (0.0 <= float(self.bg_box_opacity) <= 1.0):
+            raise ValueError(f"bg_box_opacity must be float 0.0..1.0, got {self.bg_box_opacity!r}")
+        if not isinstance(self.retro_effect, int) or not (0 <= self.retro_effect <= 6):
+            raise ValueError(f"retro_effect must be int 0..6, got {self.retro_effect!r}")
+
         if self.effect not in ("off", "oled", "2000s"):
             raise ValueError(
                 f"effect must be 'off'|'oled'|'2000s', got {self.effect!r}"
@@ -323,23 +469,30 @@ class OverlayConfig:
         for f in dataclasses.fields(cls):
             if f.name in d:
                 value = d[f.name]
-                # custom_fontsは辞書以外・壊れた中身でも落とさず吸収する。
-                # from_dict直呼びの不正は __post_init__ のValueErrorで通知する。
                 if f.name == "custom_fonts":
                     if isinstance(value, dict):
                         cleaned = {
                             k: v for k, v in value.items()
                             if isinstance(k, str) and k.strip()
                             and isinstance(v, str) and v.strip()
-                            and k not in FONT_CHOICES
+                            and k not in ALL_BUILTIN_FONTS
                         }
                         kwargs[f.name] = cleaned
-                    # 欠落・非辞書は既定{}に任せるため何もしない
                 elif f.name == "ui_language":
                     kwargs[f.name] = normalize_language(value)
+                elif f.name == "effect":
+                    # ComfyUI等からの互換: normal -> off
+                    val = str(value)
+                    if val in ("normal", "clean"):
+                        val = "off"
+                    kwargs[f.name] = val
                 else:
                     kwargs[f.name] = value
-        # 欠落フィールドの既定値・default_factoryはdataclassの生成処理に任せる。
+
+        if "retro_effect" not in kwargs:
+            legacy_eff = kwargs.get("effect", "off")
+            kwargs["retro_effect"] = 2 if legacy_eff == "2000s" else 0
+
         return cls(**kwargs)
 
     def with_custom_font(self, display_name: str, file_path: Path | str) -> "OverlayConfig":
@@ -348,7 +501,7 @@ class OverlayConfig:
         err = validate_custom_font_file(file_path)
         if err is not None:
             raise ValueError(err)
-        if name in FONT_CHOICES:
+        if name in ALL_BUILTIN_FONTS:
             raise ValueError(f"collides with builtin: {name!r}")
         merged = dict(self.custom_fonts)
         merged[name] = str(Path(file_path))
@@ -356,7 +509,7 @@ class OverlayConfig:
 
     def without_custom_font(self, display_name: str) -> "OverlayConfig":
         """カスタム1件を解除する。使っていた場合は既定フォントに戻す。"""
-        if display_name in FONT_CHOICES:
+        if display_name in ALL_BUILTIN_FONTS:
             raise ValueError(f"builtin font cannot be removed: {display_name!r}")
         if display_name not in self.custom_fonts:
             raise ValueError(f"unknown custom font: {display_name!r}")

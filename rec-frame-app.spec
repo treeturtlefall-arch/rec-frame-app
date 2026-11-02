@@ -1,18 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller 単体exe用 spec (Windows 向け・SPEC §9)。
+r"""PyInstaller 単体exe用 spec (Windows 向け・SPEC §9)。
 
 方針:
 - エントリは `rec_frame_app.py` のみ。`rec_cli / rec_overlay / rec_config / rec_batch` は
   通常 import のため自動で同梱される。Pillow / tkinter も hook で自動検出。
-- フォントは OS のシステムフォントを使うため `datas` 同梱なし
-  (リポジトリにフォント非同梱・README に明記)。
+- OSSフォント (`fonts`) およびドットマーク素材 (`assets/dots`) を `datas` に同梱。
 - `console=True` を維持すること。GUI と CLI `--batch` を1本の exe で
   兼ねるためで、`windowed=True` にすると `--batch` の出力が見えなくなる。
 - onefile 構成 (`EXE` に binaries/datas を全部畳む)。
 
 再現ビルド:
-    .venv\\Scripts\\python -m pip install pyinstaller
-    .venv\\Scripts\\pyinstaller rec-frame-app.spec --clean --noconfirm
+    .venv\Scripts\python -m pip install pyinstaller
+    .venv\Scripts\pyinstaller rec-frame-app.spec --clean --noconfirm
 """
 
 block_cipher = None
@@ -22,7 +21,10 @@ a = Analysis(
     ['rec_frame_app.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[
+        ('fonts', 'fonts'),
+        ('assets/dots', 'assets/dots'),
+    ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

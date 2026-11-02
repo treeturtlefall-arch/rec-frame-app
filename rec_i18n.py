@@ -29,6 +29,13 @@ MESSAGES: dict[str, dict[str, str]] = {
         "style.color": "オーバーレイの色",
         "color.black": "黒",
         "color.white": "白",
+        "color.green": "暗視グリーン",
+        "color.cyan": "サイバーHUD",
+        "color.red": "警告レッド",
+        "color.yellow": "ハザードイエロー",
+        "style.color_custom": "カスタム色 (HEX)",
+        "action.color_pick": "選択…",
+        "action.color_clear": "解除",
         "style.color_hint": "枠・文字・十字に適用（赤丸は赤）",
         "style.thickness": "枠の太さ",
         "thickness.small": "小",
@@ -40,6 +47,15 @@ MESSAGES: dict[str, dict[str, str]] = {
         "effect.off": "OFF(クリーン)",
         "effect.oled": "OLED(微発光)",
         "effect.2000s": "2000sデジカメ",
+        "style.retro_level": "レトロ劣化レベル",
+        "style.retro_level_hint": "0:クリーン 〜 2:2000s 〜 6:極限Break",
+        "retro.level_0": "0: OFF(クリーン)",
+        "retro.level_1": "1: 微弱",
+        "retro.level_2": "2: 標準(2000s)",
+        "retro.level_3": "3: 中",
+        "retro.level_4": "4: 強",
+        "retro.level_5": "5: 超強",
+        "retro.level_6": "6: 極限Break",
         "batch.hint": "現在のモード・設定を全画像に適用",
         "preview.title": "プレビュー",
         "preview.empty_title": "1枚の写真から、はじめよう。",
@@ -51,6 +67,18 @@ MESSAGES: dict[str, dict[str, str]] = {
         "element.battery": "電池",
         "element.rec": "REC",
         "element.cross": "中央十字",
+        "detail.customize": "ファインダー詳細設定",
+        "detail.bg_box": "半透明座布団",
+        "detail.bg_box_hint": "文字や電池の背後に背景色を自動反転して敷く",
+        "detail.battery_bars": "電池残量",
+        "detail.battery_bars_hint": "残量バー本数 (0〜4本)",
+        "detail.rec_label": "REC表示文字",
+        "detail.rec_label_hint": "REC, LIVE, 録画中 など",
+        "detail.dot_style": "RECマーク素材",
+        "detail.dot_style_hint": "真円または透過光球素材",
+        "detail.show_red_dot": "マークを表示する",
+        "detail.thickness_slider": "枠太さの微調整 (0〜100)",
+        "detail.thickness_slider_hint": "0で極細線、50で標準、100で極太枠",
         "detail.time": "日時",
         "time.show": "日時を表示する",
         "time.use_photo": "写真の撮影日時を使う",
@@ -132,6 +160,13 @@ MESSAGES: dict[str, dict[str, str]] = {
         "style.color": "Overlay color",
         "color.black": "Black",
         "color.white": "White",
+        "color.green": "Night Vision Green",
+        "color.cyan": "Cyber HUD Cyan",
+        "color.red": "Alert Red",
+        "color.yellow": "Hazard Yellow",
+        "style.color_custom": "Custom color (HEX)",
+        "action.color_pick": "Pick…",
+        "action.color_clear": "Clear",
         "style.color_hint": "Applies to frame, text, and crosshair (dot stays red)",
         "style.thickness": "Frame thickness",
         "thickness.small": "Small",
@@ -143,6 +178,15 @@ MESSAGES: dict[str, dict[str, str]] = {
         "effect.off": "OFF (Clean)",
         "effect.oled": "OLED (Soft glow)",
         "effect.2000s": "2000s digital camera",
+        "style.retro_level": "Retro effect level",
+        "style.retro_level_hint": "0:Clean to 2:2000s to 6:Near Break",
+        "retro.level_0": "0: OFF (Clean)",
+        "retro.level_1": "1: Subtle",
+        "retro.level_2": "2: Classic (2000s)",
+        "retro.level_3": "3: Medium",
+        "retro.level_4": "4: Heavy",
+        "retro.level_5": "5: Extreme",
+        "retro.level_6": "6: Near Break",
         "batch.hint": "Apply the current mode and settings to every image",
         "preview.title": "Preview",
         "preview.empty_title": "Start with a photo.",
@@ -154,6 +198,18 @@ MESSAGES: dict[str, dict[str, str]] = {
         "element.battery": "Battery",
         "element.rec": "REC",
         "element.cross": "Center crosshair",
+        "detail.customize": "Customization",
+        "detail.bg_box": "Background box",
+        "detail.bg_box_hint": "Places a high-contrast box behind elements",
+        "detail.battery_bars": "Battery bars",
+        "detail.battery_bars_hint": "Number of battery bars (0-4)",
+        "detail.rec_label": "REC label text",
+        "detail.rec_label_hint": "REC, LIVE, etc.",
+        "detail.dot_style": "REC dot style",
+        "detail.dot_style_hint": "Circle or glowing dot asset",
+        "detail.show_red_dot": "Show dot marker",
+        "detail.thickness_slider": "Fine-tune thickness (0-100)",
+        "detail.thickness_slider_hint": "0 for hairline, 50 for normal, 100 for thick",
         "detail.time": "Date and time",
         "time.show": "Show date and time",
         "time.use_photo": "Use the photo date",
@@ -233,6 +289,16 @@ BUILTIN_FONT_LABELS_EN: dict[str, str] = {
     "OCRB(計測機器風)": "OCRB (Instrument style)",
 }
 
+# 同梱OSSフォント6種の英語表示名
+BUNDLED_FONT_LABELS_EN: dict[str, str] = {
+    "Roboto Condensed Bold(細長)": "Roboto Condensed Bold (Condensed)",
+    "Bebas Neue(縦長大文字)": "Bebas Neue (Tall uppercase)",
+    "DSEG7 Classic(7セグLED)": "DSEG7 Classic (7-Segment LED)",
+    "Share Tech Mono(等幅)": "Share Tech Mono (Monospace)",
+    "VT323(レトロドット)": "VT323 (Retro Dot)",
+    "Zen Kaku Gothic(日本語)": "Zen Kaku Gothic (Japanese)",
+}
+
 
 def normalize_language(value: object) -> LanguageKey:
     return value if value in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
@@ -252,7 +318,11 @@ def effect_label(key: str, language: object) -> str:
     return tr(language, f"effect.{key}")
 
 
+def color_label(key: str, language: object) -> str:
+    return tr(language, f"color.{key}")
+
+
 def builtin_font_label(key: str, language: object) -> str:
     if normalize_language(language) == "en":
-        return BUILTIN_FONT_LABELS_EN.get(key, key)
+        return BUNDLED_FONT_LABELS_EN.get(key, BUILTIN_FONT_LABELS_EN.get(key, key))
     return key

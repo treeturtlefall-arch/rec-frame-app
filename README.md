@@ -35,7 +35,10 @@ Camera viewfinder style overlay (corner brackets + battery + red REC dot) compos
 ## 機能 / Features
 
 - 四隅枠・電池・REC・中央十字・日時の個別ON/OFF（簡易/詳細モード）
-- 枠色（黒/白）・枠太さ（小/中/大）・フォント10種＋カスタム追加・エフェクト（OFF / OLED / 2000s）
+- 枠色（黒/白/緑/シアン/赤/黄・HEXカラー指定）・枠太さ（小/中/大/0〜100スライダー）
+- OSSフォント6種同梱（7セグ・SF等幅・レトロドット・日本語対応）＋ OS標準10種 ＋ カスタムフォント登録
+- 詳細カスタマイズ（半透明背景座布団、発光ドットマーク素材、電池残量0〜4本、REC文字変更）
+- エフェクト（OFF / OLED / 2000s ＋ 0〜6段階レトロ劣化スライダー）
 - 日時表示（手入力＋選択式＋写真の撮影日時モード）
 - フォルダ一括処理（GUI＋CLI `--batch`、命名 `{元名}_rec{拡張子}`・衝突時は連番）
 - 日英即時切替・設定の自動記憶
@@ -69,7 +72,7 @@ rem 英語CLI / English CLI
 
 構成: `rec_frame_app.py`（GUI薄層＋CLI）/ `rec_i18n.py`（日英翻訳層）/ `rec_overlay.py`（画像生成層）/ `rec_config.py`（設定層）/ `rec_batch.py`（一括処理層）。詳細仕様は `SPEC.md` が正本です。
 
-フォントは OS のシステムフォントを使用し、リポジトリにフォントは同梱していません（No fonts bundled; uses system fonts with DejaVu fallback）。所持フォント（.ttf / .otf / .ttc）は「追加...」で登録でき、実体は設定フォルダ直下の `fonts/` にコピーして記憶します。
+定番OSSフォント6種（Roboto Condensed, Bebas Neue, DSEG7 Classic, Share Tech Mono, VT323, Zen Kaku Gothic New）を同梱しており、どのPCでも同じデザインで描画可能です。OS標準フォントや、手持ちのフォント（.ttf / .otf / .ttc）の追加登録にも対応しています。
 
 自分でビルド: `.venv\Scripts\python -m pip install pyinstaller` 後に `.venv\Scripts\pyinstaller rec-frame-app.spec --clean --noconfirm`（成果物は `dist/`）。
 
