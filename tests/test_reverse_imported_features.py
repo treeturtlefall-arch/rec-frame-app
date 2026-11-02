@@ -189,10 +189,13 @@ def test_config_roundtrip_with_new_fields():
     assert restored.arm_len_ratio == 0.20
 
 
-def test_ui_reflects_new_features():
+def test_ui_reflects_new_features(monkeypatch):
     """UIの各コントロール変更が _current_config() に正確に反映されること。"""
     import rec_frame_app
     import tkinter as tk
+
+    monkeypatch.setattr(rec_frame_app, "load_user_config", OverlayConfig)
+    monkeypatch.setattr(rec_frame_app, "save_user_config", lambda _config: None)
 
     try:
         app = rec_frame_app.App()
@@ -201,6 +204,7 @@ def test_ui_reflects_new_features():
 
     try:
         app.withdraw()
+        app.mode_var.set("detail")  # 詳細設定項目を _current_config() に反映させるため
         app.rec_label_var.set("TESTING")
         app.battery_bars_var.set(1)
         app.bg_box_opacity_var.set(0.6)
