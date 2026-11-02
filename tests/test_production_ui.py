@@ -149,6 +149,8 @@ def test_scroll_page_hides_bar_when_content_fits(monkeypatch):
     except tk.TclError as error:
         pytest.skip(f"Tk display unavailable: {error}")
     try:
+        if app.winfo_screenheight() < 800:
+            pytest.skip(f"Screen height too small for 1160x900 test ({app.winfo_screenheight()}px)")
         app.geometry("1160x900")
         app.update()
         app.style_page._size()

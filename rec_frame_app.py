@@ -384,34 +384,9 @@ class App(tk.Tk):
         self.tabs.bind("<<NotebookTabChanged>>", self._tab_labels)
 
         page = self.style_page.content
-        self._label(page, "style.color", "Section.TLabel")
-        color_grid = ttk.Frame(page)
-        color_grid.pack(fill="x")
-        color_items = [
-            ("color.black", "black"),
-            ("color.white", "white"),
-            ("color.green", "green"),
-            ("color.cyan", "cyan"),
-            ("color.red", "red"),
-            ("color.yellow", "yellow"),
-        ]
-        for index, (key, value) in enumerate(color_items):
-            rb = ttk.Radiobutton(
-                color_grid, variable=self.preset_color_var, value=value,
-                command=self._on_preset_color_changed)
-            self._remember_text(rb, key)
-            rb.grid(row=index // 2, column=index % 2, sticky="w", padx=(0, 10), pady=2)
-
-        hex_row = ttk.Frame(page)
-        hex_row.pack(fill="x", pady=(6, 2))
-        self._label(hex_row, "style.color_custom").pack(side="left", padx=(0, 6))
-        self.custom_hex_entry = ttk.Entry(hex_row, textvariable=self.custom_color_var, width=9)
-        self.custom_hex_entry.pack(side="left")
-        self.custom_hex_entry.bind("<FocusOut>", lambda _e: self._on_custom_color_typed())
-        self.custom_hex_entry.bind("<Return>", lambda _e: self._on_custom_color_typed())
-        self._button(hex_row, "action.color_pick", command=self._on_pick_color).pack(side="left", padx=(6, 2))
-        self._button(hex_row, "action.color_clear", command=self._on_clear_custom_color).pack(side="left")
-        self._label(page, "style.color_hint", "Muted.TLabel", wraplength=250)
+        self._section(page, "style.color")
+        self._choices(page, self.color_var,
+                      [("color.black", "black"), ("color.white", "white")])
 
         self._section(page, "style.thickness")
         self._choices(page, self.thickness_var,
@@ -439,19 +414,6 @@ class App(tk.Tk):
             state="readonly")
         self.effect_box.pack(fill="x")
         self.effect_box.bind("<<ComboboxSelected>>", self._on_effect_selected)
-
-        retro_row = ttk.Frame(page)
-        retro_row.pack(fill="x", pady=(8, 2))
-        self._label(retro_row, "style.retro_level").pack(side="left")
-        self.retro_level_label = ttk.Label(retro_row, textvariable=self.retro_level_display_var)
-        self.retro_level_label.pack(side="right")
-        self.retro_scale = ttk.Scale(
-            page, from_=0, to=6, orient="horizontal",
-            command=self._on_retro_scale_moved)
-        self.retro_scale.set(self.retro_effect_var.get())
-        self.retro_scale.pack(fill="x")
-        self._label(page, "style.retro_level_hint", "Muted.TLabel", wraplength=250)
-        self._update_retro_level_display()
 
         self._build_redesigned_details()
         self.style_page.bind_controls()
@@ -517,8 +479,49 @@ class App(tk.Tk):
             self._element_checks.append(widget)
         row.bind("<Configure>", self._layout_element_checks, add="+")
 
-        # ファインダー詳細設定 (座布団・電池残量・RECテキスト・マーク素材・太さ微調整)
+        # ファインダー詳細設定 (拡張カラー・レトロ度・座布団・電池残量・RECテキスト・マーク素材・太さ微調整)
         self._section(page, "detail.customize")
+
+        # カラープリセット & HEX入力
+        color_grid = ttk.Frame(page)
+        color_grid.pack(fill="x", pady=(2, 2))
+        color_items = [
+            ("color.black", "black"),
+            ("color.white", "white"),
+            ("color.green", "green"),
+            ("color.cyan", "cyan"),
+            ("color.red", "red"),
+            ("color.yellow", "yellow"),
+        ]
+        for index, (key, value) in enumerate(color_items):
+            rb = ttk.Radiobutton(
+                color_grid, variable=self.preset_color_var, value=value,
+                command=self._on_preset_color_changed)
+            self._remember_text(rb, key)
+            rb.grid(row=index // 2, column=index % 2, sticky="w", padx=(0, 10), pady=1)
+
+        hex_row = ttk.Frame(page)
+        hex_row.pack(fill="x", pady=(4, 2))
+        self._label(hex_row, "style.color_custom").pack(side="left", padx=(0, 4))
+        self.custom_hex_entry = ttk.Entry(hex_row, textvariable=self.custom_color_var, width=8)
+        self.custom_hex_entry.pack(side="left")
+        self.custom_hex_entry.bind("<FocusOut>", lambda _e: self._on_custom_color_typed())
+        self.custom_hex_entry.bind("<Return>", lambda _e: self._on_custom_color_typed())
+        self._button(hex_row, "action.color_pick", command=self._on_pick_color).pack(side="left", padx=(4, 2))
+        self._button(hex_row, "action.color_clear", command=self._on_clear_custom_color).pack(side="left")
+
+        # レトロエフェクト段階スライダー
+        retro_row = ttk.Frame(page)
+        retro_row.pack(fill="x", pady=(6, 2))
+        self._label(retro_row, "style.retro_level").pack(side="left")
+        self.retro_level_label = ttk.Label(retro_row, textvariable=self.retro_level_display_var)
+        self.retro_level_label.pack(side="right")
+        self.retro_scale = ttk.Scale(
+            page, from_=0, to=6, orient="horizontal",
+            command=self._on_retro_scale_moved)
+        self.retro_scale.set(self.retro_effect_var.get())
+        self.retro_scale.pack(fill="x")
+        self._update_retro_level_display()
 
         bg_box_row = ttk.Frame(page)
         bg_box_row.pack(fill="x", pady=(2, 2))
